@@ -11,10 +11,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c19928a770c5cd341af9355e0a695759, type: 3}
   m_Name: Play a Game
   m_EditorClassIdentifier: 
-  buttons:
+  header: Play a game
+  menuType: 0
+  menuItems:
   - header: Continue
     menu: {fileID: 0}
-    isCheckmarkRequired: 0
+    isCheckMarkRequired: 0
+    isRemoveRequired: 0
   - header: Choose a Treasure Hunt
     menu: {fileID: 11400000, guid: 72b337349b7e3ee4a98509ab5f5085db, type: 2}
-    isCheckmarkRequired: 0
+    isCheckMarkRequired: 0
+    isRemoveRequired: 0

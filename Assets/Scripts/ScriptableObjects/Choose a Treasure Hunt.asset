@@ -11,16 +11,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c19928a770c5cd341af9355e0a695759, type: 3}
   m_Name: Choose a Treasure Hunt
   m_EditorClassIdentifier: 
-  buttons:
-  - header: Luka's Hunt
-    menu: {fileID: 0}
-    isCheckmarkRequired: 1
-  - header: For Her
-    menu: {fileID: 0}
-    isCheckmarkRequired: 0
-  - header: Treasure Hunt Special
-    menu: {fileID: 0}
-    isCheckmarkRequired: 1
-  - header: Test Treasure Hunt
-    menu: {fileID: 0}
-    isCheckmarkRequired: 0
+  header: Choose a Treasure Hunt
+  menuType: 0
+  menuItems: []

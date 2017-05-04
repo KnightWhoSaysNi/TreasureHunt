@@ -11,10 +11,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c19928a770c5cd341af9355e0a695759, type: 3}
   m_Name: Create a Treasure Hunt
   m_EditorClassIdentifier: 
-  buttons:
+  header: Create a Treasure Hunt
+  menuType: 0
+  menuItems:
   - header: Create a new Treasure Hunt
     menu: {fileID: 0}
-    isCheckmarkRequired: 0
-  - header: Edit an existing Treasure Hunt
+    isCheckMarkRequired: 0
+    isRemoveRequired: 0
+  - header: Edit existing Treasure Hunt
     menu: {fileID: 0}
-    isCheckmarkRequired: 0
+    isCheckMarkRequired: 0
+    isRemoveRequired: 0

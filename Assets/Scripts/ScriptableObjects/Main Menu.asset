@@ -11,16 +11,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c19928a770c5cd341af9355e0a695759, type: 3}
   m_Name: Main Menu
   m_EditorClassIdentifier: 
-  buttons:
-  - header: Play a Game
+  header: Main Menu
+  menuType: 0
+  menuItems:
+  - header: Play a game
     menu: {fileID: 11400000, guid: 81c6c380963d69843b3f214b32704a1a, type: 2}
-    isCheckmarkRequired: 0
+    isCheckMarkRequired: 0
+    isRemoveRequired: 0
   - header: Create a Treasure Hunt
     menu: {fileID: 11400000, guid: 62bf31d7b01d2e1439031abb1c30e22f, type: 2}
-    isCheckmarkRequired: 0
+    isCheckMarkRequired: 0
+    isRemoveRequired: 0
   - header: Instructions
     menu: {fileID: 0}
-    isCheckmarkRequired: 0
+    isCheckMarkRequired: 0
+    isRemoveRequired: 0
   - header: Options
     menu: {fileID: 0}
-    isCheckmarkRequired: 0
+    isCheckMarkRequired: 0
+    isRemoveRequired: 0
+  - header: Quit
+    menu: {fileID: 0}
+    isCheckMarkRequired: 0
+    isRemoveRequired: 0
