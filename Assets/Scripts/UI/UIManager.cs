@@ -8,9 +8,11 @@ public class UIManager : MonoBehaviour
 {
     private GameManager gameManager;
 
-    private Dictionary<string, Menu> menuDictionary;
-    private Menu currentMenu;
-    private Stack<Menu> menuStack;
+    private Dictionary<string, Menu> gameMenuDictionary;
+    private Transform currentMenu;
+    private Menu currentGameMenu;
+    private Stack<Transform> menuStack;
+    private Stack<Menu> gameMenuStack;
     
     private bool isTaskActive;
     
@@ -21,9 +23,9 @@ public class UIManager : MonoBehaviour
     public RectTransform headerInputField;
 
     [Header("Menu")]
-    public Menu mainMenu;
+    public Transform mainMenu;
     public RectTransform menuItemsPanel;
-    public Transform menuContent;
+    public Transform gameMenu;
 
     [Header("Task")]
     public RectTransform taskPanel;
@@ -61,6 +63,8 @@ public class UIManager : MonoBehaviour
 
     #region - Event Handlers for menu items -
 
+    #region - Main Menu -
+
     public void Quit()
     {
         Application.Quit();
@@ -68,8 +72,56 @@ public class UIManager : MonoBehaviour
 
     public void Back()
     {
-        Menu previousMenu = menuStack.Peek();
-        OpenMenu(previousMenu, true);
+        //if (isGameMenuOpened)
+        //{
+        //    // Treasure Hunt list, or Problems or Tasks are opened
+        //    // TODO
+        //Menu previousMenu = gameMenuStack.Peek();
+        //OpenMenu(previousMenu, true);
+        //}
+
+        // Regular menu - Not a Treasure Hunt list or its problems/tasks
+        currentMenu.gameObject.SetActive(false);
+        Transform menu = menuStack.Pop();
+        UpdateCurrentMenu(menu);
+        currentMenu.gameObject.SetActive(true);
+    }
+
+    #endregion
+
+    #region - Play a game -
+
+    public void ShowAllTreasureHunts()
+    {
+        Menu newMenu = new Menu();
+
+    }
+
+    #endregion
+
+    public void AddMenuToStack(Transform menu)
+    {
+        menuStack.Push(menu);
+
+        if (menu.name == "Main Menu")
+        {
+            backPanel.gameObject.SetActive(true);
+        }
+    }
+
+    public void UpdateCurrentMenu(Transform menu)
+    {
+        currentMenu = menu;
+        headerText.text = currentMenu.name; // TODO resolve the creation mode case and also in Game menu Menu class is used, not Transform with .name
+        if (currentMenu.name == "Game Menu")
+        {
+            // TODO Header needs to be set to the appropriate text            
+        }
+
+        if (menu.name == "Main Menu")
+        {
+            backPanel.gameObject.SetActive(false);
+        }
     }
 
     #endregion
@@ -77,28 +129,28 @@ public class UIManager : MonoBehaviour
     private void Start()
     {
         gameManager = GetComponent<GameManager>();
-        
-        currentMenu = mainMenu;
-        
-        menuDictionary = new Dictionary<string, Menu>();
-        menuStack = new Stack<Menu>();
 
-        UpdateMenu();
-    }
-        
+        currentMenu = mainMenu;
+
+        gameMenuDictionary = new Dictionary<string, Menu>();
+        menuStack = new Stack<Transform>();
+        gameMenuStack = new Stack<Menu>();
+
+        //UpdateMenu();
+    }        
 
     private void OpenMenu(Menu newMenu, bool isBackUsed = false)
     {
         if (!isBackUsed)
         {
-            menuStack.Push(currentMenu);
+            gameMenuStack.Push(currentGameMenu);
         }
         else
         {
-            menuStack.Pop();
+            gameMenuStack.Pop();
         }
 
-        currentMenu = newMenu;
+        currentGameMenu = newMenu;
         headerText.text = newMenu.header;
         UpdateMenu();
     }
@@ -111,7 +163,7 @@ public class UIManager : MonoBehaviour
         }
         else
         {   
-            menuDictionary.Clear();
+            gameMenuDictionary.Clear();
             MenuItemPool.Instance.ReclaimMenuItems();        
 
             UpdateMenuItems();
@@ -119,10 +171,10 @@ public class UIManager : MonoBehaviour
     }
 
     private void UpdateMenuItems()
-    {
-        foreach (MenuItemData menuItemData in currentMenu.menuItems)
+    {        
+        foreach (MenuItemData menuItemData in currentGameMenu.menuItems)
         {
-            Transform menuItem = MenuItemPool.Instance.GetMenuItem(menuContent);
+            Transform menuItem = MenuItemPool.Instance.GetMenuItem(gameMenu).transform;
 
             string menuHeader = menuItemData.header;
             menuItem.GetComponentInChildren<Text>().text = menuHeader; // TODO this could throw exception if there is no Text component in the button            
@@ -134,11 +186,11 @@ public class UIManager : MonoBehaviour
                 menu.menuItems = new List<MenuItemData>();
                 menu.header = menuHeader;
             }
-            menuDictionary.Add(menuHeader, menu);            
+            gameMenuDictionary.Add(menuHeader, menu);            
 
             Button button = menuItem.GetComponent<Button>(); // TODO check if null
             // If menuItemData.menu is used directly in AddListener by the time it is called it will not be available
-            button.onClick.AddListener(() => OpenMenu(menuDictionary[menuHeader]));
+            button.onClick.AddListener(() => OpenMenu(gameMenuDictionary[menuHeader]));
 
             if (menuHeader == "Create a new Treasure Hunt")
             {
@@ -166,18 +218,18 @@ public class UIManager : MonoBehaviour
             }
         }
 
-        if (currentMenu.menuType == Menu.MenuType.Problem)
+        if (currentGameMenu.menuType == Menu.GameMenuType.Problem)
         {
-            MenuItemPool.Instance.GetAddProblem(menuContent);
+            MenuItemPool.Instance.GetAddProblem(gameMenu);
         }
-        else if (currentMenu.menuType == Menu.MenuType.Task)
+        else if (currentGameMenu.menuType == Menu.GameMenuType.Task)
         {
-            MenuItemPool.Instance.GetAddTask(menuContent);
+            MenuItemPool.Instance.GetAddTask(gameMenu);
         }
 
 
         // Show/hide back panel
-        if (currentMenu.header == "Main Menu")
+        if (currentGameMenu.header == "Main Menu")
         {
             // Back button is not needed
             backPanel.gameObject.SetActive(false);
@@ -188,6 +240,11 @@ public class UIManager : MonoBehaviour
             backPanel.gameObject.SetActive(true);
             //Menu previousMenu = menuStack.Peek();           
         }
+    }
+
+    private void OnTreasureHuntCreated()
+    {
+        // TODO In GameMenu show appropriate options
     }
     
     private void OnTaskActivated()

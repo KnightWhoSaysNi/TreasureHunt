@@ -8,7 +8,6 @@ namespace TreasureHunt
     [Serializable]
     public class TreasureHunt
     {
-
         public TreasureHunt(string title)
         {
             this.Title = title;
@@ -19,7 +18,7 @@ namespace TreasureHunt
         public string Title { get; set; }
         public bool IsCompleted { get; set; }
         public float PercentComplete { get; set; }
-        //public  Task LastPlayedTask { get; set; }
+        public Task LastPlayedTask { get; set; }
     }
 
 }

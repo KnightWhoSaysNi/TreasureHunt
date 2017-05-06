@@ -5,6 +5,7 @@ using System.Text;
 
 namespace TreasureHunt
 {
+    [Serializable]
     public struct Location
     {
         public Location(float latitude, float longitude)

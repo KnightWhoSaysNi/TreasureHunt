@@ -12,6 +12,7 @@ GameObject:
   - 114: {fileID: 11451488}
   - 114: {fileID: 11448320}
   - 114: {fileID: 11405376}
+  - 114: {fileID: 11420092}
   m_Layer: 5
   m_Name: Menu Item
   m_TagString: Untagged
@@ -192,7 +193,19 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Problem/Task
+  m_Text: Menu item
+--- !u!114 &11420092
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 108436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e1d6d3f40ecb104c9260a49eb932e4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  menuItemType: 0
 --- !u!114 &11448320
 MonoBehaviour:
   m_ObjectHideFlags: 1

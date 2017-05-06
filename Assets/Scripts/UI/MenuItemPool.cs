@@ -7,25 +7,25 @@ using UnityEngine.UI;
 public class MenuItemPool : MonoBehaviour
 {
     private int currentItemCount;
-    private Queue<Transform> inactiveMenuItems;
-    private Queue<Transform> activeMenuItems;
+    private Queue<MenuItem> inactiveMenuItems;
+    private Queue<MenuItem> activeMenuItems;
 
     public int poolStartingCount = 10; // TODO perhaps put this in constants
-    public Transform menuItemPrefab;
+    public MenuItem menuItemPrefab;
     public Transform addProblem;
     public Transform addTask;
 
     public static MenuItemPool Instance { get; private set; }  
 
-    public Transform GetMenuItem(Transform parent)
+    public MenuItem GetMenuItem(Transform parent)
     {
         if (inactiveMenuItems.Count == 0)
         {
             ExpandPool();
         }
 
-        Transform menuItem = inactiveMenuItems.Dequeue();
-        ActivateMenuItem(menuItem, parent);
+        MenuItem menuItem = inactiveMenuItems.Dequeue();
+        ActivateMenuItem(menuItem.transform, parent);
         activeMenuItems.Enqueue(menuItem);
 
         return menuItem;
@@ -49,8 +49,8 @@ public class MenuItemPool : MonoBehaviour
     {
         while (activeMenuItems.Count > 0)
         {
-            Transform menuItem = activeMenuItems.Dequeue();
-            ResetMenuItem(menuItem);
+            MenuItem menuItem = activeMenuItems.Dequeue();
+            ResetMenuItem(menuItem.transform);
             inactiveMenuItems.Enqueue(menuItem);
         }
 
@@ -75,8 +75,8 @@ public class MenuItemPool : MonoBehaviour
             Destroy(this);
         }
 
-        inactiveMenuItems = new Queue<Transform>();
-        activeMenuItems = new Queue<Transform>();
+        inactiveMenuItems = new Queue<MenuItem>();
+        activeMenuItems = new Queue<MenuItem>();
 
         currentItemCount = poolStartingCount;
         InstantiateMenuItems(currentItemCount);
@@ -91,8 +91,8 @@ public class MenuItemPool : MonoBehaviour
     {
         for (int i = 0; i < numberOfMenuItems; i++)
         {
-            Transform newMenuItem = Instantiate(menuItemPrefab);
-            ResetMenuItem(newMenuItem);
+            MenuItem newMenuItem = Instantiate(menuItemPrefab);
+            ResetMenuItem(newMenuItem.transform);
 
             inactiveMenuItems.Enqueue(newMenuItem);
         }        

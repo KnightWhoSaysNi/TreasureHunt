@@ -5,6 +5,7 @@ using System.Text;
 
 namespace TreasureHunt
 {
+    [Serializable]
     public class Hint
     {
         public string Text { get; set; }

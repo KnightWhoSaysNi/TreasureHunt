@@ -5,6 +5,7 @@ using System.Text;
 
 namespace TreasureHunt
 {
+    [Serializable]
     public class Problem
     {
 
@@ -17,5 +18,6 @@ namespace TreasureHunt
         public Dictionary<string, Task> Tasks { get; set; }
         public string Title { get; set; }
         public bool IsSolved { get; set; }
+        public int HintPoints { get; set; }
     }
 }

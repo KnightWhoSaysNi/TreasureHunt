@@ -5,6 +5,7 @@ using System.Text;
 
 namespace TreasureHunt
 {
+    [Serializable]
     public class Solution
     {
         public Solution(string textSolution, bool hasLocationSolution = false)

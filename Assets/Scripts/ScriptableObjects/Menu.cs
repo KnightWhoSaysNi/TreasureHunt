@@ -5,10 +5,10 @@ using UnityEngine;
 public class Menu : ScriptableObject
 {
     public string header;
-    public MenuType menuType = MenuType.Regular;
+    public GameMenuType menuType = GameMenuType.TreasureHunt;
     public List<MenuItemData> menuItems;    
 
-    public enum MenuType { Regular, Problem, Task};
+    public enum GameMenuType { TreasureHunt, Problem, Task};
 }
 
 
