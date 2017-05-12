@@ -5,17 +5,23 @@ using System.Text;
 
 namespace TreasureHunt
 {
-    [Serializable]
-    public class Task
+    [Serializable]    
+    public class Task : ITitle
     {
-        public Task(Problem problem, string title)
+        public Task(string title)
         {
-            this.Problem = problem;
             this.Title = title;
             Hints = new List<Hint>();
+            Solution = new Solution();
+            TextClue = string.Empty;
         }
 
-        public Task(Problem problem, string title, string textClue):this(problem, title)
+        public Task(string title, Problem problem) : this(title)
+        {
+            this.Problem = problem;
+        }
+
+        public Task(string title, Problem problem, string textClue) : this(title, problem)
         {
             this.TextClue = textClue;
         }

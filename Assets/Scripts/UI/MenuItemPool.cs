@@ -12,8 +12,8 @@ public class MenuItemPool : MonoBehaviour
 
     public int poolStartingCount = 10; // TODO perhaps put this in constants
     public MenuItem menuItemPrefab;
-    public Transform addProblem;
-    public Transform addTask;
+    public MenuItem addProblem;
+    public MenuItem addTask;
 
     public static MenuItemPool Instance { get; private set; }  
 
@@ -25,20 +25,20 @@ public class MenuItemPool : MonoBehaviour
         }
 
         MenuItem menuItem = inactiveMenuItems.Dequeue();
-        ActivateMenuItem(menuItem.transform, parent);
+        ActivateMenuItem(menuItem, parent);
         activeMenuItems.Enqueue(menuItem);
 
         return menuItem;
     }
 
-    public Transform GetAddProblem(Transform parent)
+    public MenuItem GetAddProblem(Transform parent)
     {
         ActivateMenuItem(addProblem, parent);
 
         return addProblem;
     }
 
-    public Transform GetAddTask(Transform parent)
+    public MenuItem GetAddTask(Transform parent)
     {
         ActivateMenuItem(addTask, parent);
 
@@ -50,15 +50,15 @@ public class MenuItemPool : MonoBehaviour
         while (activeMenuItems.Count > 0)
         {
             MenuItem menuItem = activeMenuItems.Dequeue();
-            ResetMenuItem(menuItem.transform);
+            ResetMenuItem(menuItem);
             inactiveMenuItems.Enqueue(menuItem);
         }
 
-        if (!addProblem.IsChildOf(this.transform))
+        if (!addProblem.transform.IsChildOf(this.transform))
         {
             ResetMenuItem(addProblem);
         }
-        if (!addTask.IsChildOf(this.transform))
+        if (!addTask.transform.IsChildOf(this.transform))
         {
             ResetMenuItem(addTask);
         }
@@ -92,7 +92,7 @@ public class MenuItemPool : MonoBehaviour
         for (int i = 0; i < numberOfMenuItems; i++)
         {
             MenuItem newMenuItem = Instantiate(menuItemPrefab);
-            ResetMenuItem(newMenuItem.transform);
+            ResetMenuItem(newMenuItem);
 
             inactiveMenuItems.Enqueue(newMenuItem);
         }        
@@ -104,30 +104,27 @@ public class MenuItemPool : MonoBehaviour
         currentItemCount *= 2;
     }
 
-    private void ResetMenuItem(Transform menuItem)
+    private void ResetMenuItem(MenuItem menuItem)
     {
         DeactivateMenuItem(menuItem);
 
         Button button = menuItem.GetComponent<Button>(); // TODO protect against null reference exceptions        
         button.onClick.RemoveAllListeners();
-        button.GetComponentInChildren<Text>().text = string.Empty;
 
-        GameObject removeButton = menuItem.FindChild("Remove").gameObject; // TODO put both remove and check mark in a class which gets them directly from prefab... if possible
-        removeButton.SetActive(false);
-
-        GameObject checkMark = menuItem.FindChild("Check mark").gameObject;
-        checkMark.SetActive(false);
+        menuItem.text.text = string.Empty;
+        menuItem.removeButton.SetActive(false);
+        menuItem.checkMark.SetActive(false);
     }
 
-    private void ActivateMenuItem(Transform menuItem, Transform parent)
+    private void ActivateMenuItem(MenuItem menuItem, Transform parent)
     {
-        menuItem.SetParent(parent, false);
+        menuItem.transform.SetParent(parent, false);
         menuItem.gameObject.SetActive(true);
     }
 
-    private void DeactivateMenuItem(Transform menuItem)
+    private void DeactivateMenuItem(MenuItem menuItem)
     {
-        menuItem.SetParent(this.transform, false);
+        menuItem.transform.SetParent(this.transform, false);
         menuItem.gameObject.SetActive(false);
     }
 }

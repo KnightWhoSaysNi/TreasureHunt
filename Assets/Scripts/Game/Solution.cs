@@ -8,6 +8,11 @@ namespace TreasureHunt
     [Serializable]
     public class Solution
     {
+        public Solution()
+        {
+            TextSolution = string.Empty;
+        }
+
         public Solution(string textSolution, bool hasLocationSolution = false)
         {
             this.TextSolution = textSolution;
@@ -21,6 +26,6 @@ namespace TreasureHunt
 
         public string TextSolution { get; set; }
         public bool HasLocationSolution { get; set; }
-        public Location LocationSolution { get; set; }
+        public Location LocationSolution { get; set; } // TODO maybe guard against someone trying to call this even if HasLocationSolution == false
     }
 }

@@ -2,19 +2,16 @@
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine.UI;
+using TreasureHunt;
 
 [RequireComponent(typeof(GameManager))]
 public class UIManager : MonoBehaviour
 {
     private GameManager gameManager;
 
-    private Dictionary<string, Menu> gameMenuDictionary;
     private Transform currentMenu;
-    private Menu currentGameMenu;
     private Stack<Transform> menuStack;
-    private Stack<Menu> gameMenuStack;
-    
-    private bool isTaskActive;
+    private Stack<GameMenuTuple> gameMenuStack;    
     
     #region - Inspector Variables -
 
@@ -24,13 +21,13 @@ public class UIManager : MonoBehaviour
 
     [Header("Menu")]
     public Transform mainMenu;
-    public RectTransform menuItemsPanel;
+    public RectTransform menuPanel;
     public Transform gameMenu;
 
     [Header("Task")]
     public RectTransform taskPanel;
     public Text taskText;
-    public RectTransform taskInputField;
+    public InputField taskInputField;
 
     [Header("Hint")]
     public RectTransform hintPanel;
@@ -52,8 +49,10 @@ public class UIManager : MonoBehaviour
 
     [Header("Answer")]
     public RectTransform answerPanel;
-    public RectTransform answerInputField;
+    public InputField answerInputField;
     public RectTransform answerPlayOptions;
+    public Button checkAnswer;
+    public Button cancelAnswer;
     public RectTransform answerCreationOptions;
 
     [Header("Back")]
@@ -72,32 +71,178 @@ public class UIManager : MonoBehaviour
 
     public void Back()
     {
-        //if (isGameMenuOpened)
-        //{
-        //    // Treasure Hunt list, or Problems or Tasks are opened
-        //    // TODO
-        //Menu previousMenu = gameMenuStack.Peek();
-        //OpenMenu(previousMenu, true);
-        //}
-
-        // Regular menu - Not a Treasure Hunt list or its problems/tasks
-        currentMenu.gameObject.SetActive(false);
-        Transform menu = menuStack.Pop();
-        UpdateCurrentMenu(menu);
-        currentMenu.gameObject.SetActive(true);
+        if (gameMenuStack.Count != 0)
+        {
+            if (gameMenuStack.Peek().MenuItemType == MenuItemType.Task)
+            {
+                // As the last game menu held a Task, Task panel is currently active
+                gameMenu.gameObject.SetActive(true);
+                taskPanel.gameObject.SetActive(false);
+                answerPanel.gameObject.SetActive(false);
+                
+                var stackItem = gameMenuStack.Pop();
+                SetHeader(stackItem.Title);
+            }
+            else
+            {
+                GameMenuTuple previousGameMenu = gameMenuStack.Pop();
+                UpdateGameMenu(previousGameMenu.Title, previousGameMenu.ListOfItems, previousGameMenu.MenuItemType);
+            }
+        }
+        else
+        {
+            // Regular menu - Not a Treasure Hunt list or its problems/tasks
+            currentMenu.gameObject.SetActive(false);
+            Transform menu = menuStack.Pop();
+            UpdateCurrentMenu(menu);
+            currentMenu.gameObject.SetActive(true);
+        }
     }
 
     #endregion
 
-    #region - Play a game -
+    #region - Other Menus -
 
-    public void ShowAllTreasureHunts()
+    public void ShowAllTreasureHunts(string header)
+    {        
+        UpdateGameMenu(header, gameManager.AllTreasureHunts);
+    }
+
+    private void UpdateGameMenu(string header, IEnumerable listOfItems, MenuItemType menuItemType = MenuItemType.TreasureHunt)
     {
-        Menu newMenu = new Menu();
+        SetHeader(header);
 
+        MenuItemPool.Instance.ReclaimMenuItems();        
+
+        foreach (var item in listOfItems)
+        {
+            MenuItem menuItem = MenuItemPool.Instance.GetMenuItem(gameMenu);
+            menuItem.MenuItemType = menuItemType;
+
+            string title = ((ITitle)item).Title;
+            menuItem.text.text = title;
+
+            if (gameManager.GameMode == GameMode.CreationMode)
+            {
+                menuItem.removeButton.SetActive(true);
+            }
+
+            Button button = menuItem.GetComponent<Button>();
+            // GameMenuTuple add to the stack
+            button.onClick.AddListener(() =>
+            {
+                GameMenuTuple stackItem = new GameMenuTuple();
+                stackItem.Title = header;
+                stackItem.ListOfItems = listOfItems;
+                stackItem.MenuItemType = menuItemType;
+                gameMenuStack.Push(stackItem);
+            });
+
+            switch (menuItemType) // TODO Create separate methods for all cases
+            {
+                case MenuItemType.TreasureHunt:
+                    menuItem.TreasureHunt = (TreasureHunt.TreasureHunt)item;
+                    button.onClick.AddListener(() => {
+                        UpdateGameMenu(title, menuItem.TreasureHunt.Problems, MenuItemType.Problem);
+                        gameManager.CurrentTreasureHunt = menuItem.TreasureHunt;
+                    });
+
+                    if (gameManager.GameMode == GameMode.PlayMode)
+                    {
+                        menuItem.checkMark.SetActive(menuItem.TreasureHunt.IsCompleted);
+                    }
+                    break;
+                case MenuItemType.Problem:
+                    menuItem.Problem = (Problem)item;
+                    if (menuItem.Problem.Tasks.Count == 1)
+                    {
+                        // TODO skip showing Tasks if the game is in Play Mode and just open the one Task
+                        // If the game is in Creation Mode show Task and the Add Task button
+                    }
+                    button.onClick.AddListener(() =>
+                    {
+                        UpdateGameMenu(title, menuItem.Problem.Tasks, MenuItemType.Task);
+                        gameManager.CurrentProblem = menuItem.Problem;
+                    });
+
+                    if (gameManager.GameMode == GameMode.PlayMode)
+                    {
+                        menuItem.checkMark.SetActive(menuItem.Problem.IsSolved);
+                    }
+                    break;
+                case MenuItemType.Task:
+                    menuItem.Task = (Task)item;
+                    // TODO Add button listener which shows the Task panel with the appropriate Task
+                    button.onClick.AddListener(() =>
+                    {                        
+                        ActivateTask(menuItem.Task);
+                    });
+
+                    if (gameManager.GameMode == GameMode.PlayMode && menuItem.Task.IsSolved)
+                    {
+                        menuItem.checkMark.SetActive(true);
+                    }
+
+                    break;
+                default:
+                    break;
+            }                     
+        }
+    }
+    
+    private void SetHeader(string header)
+    {
+        headerText.text = header;
+        headerInputField.Find("Placeholder").GetComponent<Text>().text = header;
+        headerInputField.Find("Text").GetComponent<Text>().text = header;
+    }
+
+    private void ActivateTask(Task task)
+    {
+        gameManager.CurrentTask = task;
+
+        // Show Task and Answer panels and hide Game Menu
+        gameMenu.gameObject.SetActive(false);
+        taskPanel.gameObject.SetActive(true);
+        answerPanel.gameObject.SetActive(true);       
+                
+        SetHeader(task.Title);
+
+        if (gameManager.GameMode == GameMode.PlayMode)
+        {
+            taskText.text = task.TextClue;
+            taskText.gameObject.SetActive(true);
+            taskInputField.gameObject.SetActive(false);
+
+            if (task.IsSolved)
+            {
+                answerInputField.text = task.Solution.TextSolution;
+                answerInputField.interactable = false;
+                checkAnswer.interactable = false;
+                cancelAnswer.interactable = false;
+            }
+            else
+            {
+                answerInputField.text = string.Empty;
+                answerInputField.interactable = true;
+                checkAnswer.interactable = true;
+                cancelAnswer.interactable = true;
+            }
+        }
+        else // GameMode is Creation Mode
+        {
+            taskInputField.text = task.TextClue;
+            taskText.gameObject.SetActive(false);
+            taskInputField.gameObject.SetActive(true);
+
+            answerInputField.text = task.Solution.TextSolution;
+            answerInputField.interactable = true;
+        }
     }
 
     #endregion
+
+    #region - Menu change => Adding menu to stack and updating current menu - 
 
     public void AddMenuToStack(Transform menu)
     {
@@ -126,156 +271,53 @@ public class UIManager : MonoBehaviour
 
     #endregion
 
+    #endregion
+
     private void Start()
     {
         gameManager = GetComponent<GameManager>();
 
         currentMenu = mainMenu;
 
-        gameMenuDictionary = new Dictionary<string, Menu>();
         menuStack = new Stack<Transform>();
-        gameMenuStack = new Stack<Menu>();
+        gameMenuStack = new Stack<GameMenuTuple>();
 
-        //UpdateMenu();
-    }        
-
-    private void OpenMenu(Menu newMenu, bool isBackUsed = false)
-    {
-        if (!isBackUsed)
-        {
-            gameMenuStack.Push(currentGameMenu);
-        }
-        else
-        {
-            gameMenuStack.Pop();
-        }
-
-        currentGameMenu = newMenu;
-        headerText.text = newMenu.header;
-        UpdateMenu();
-    }
-
-    private void UpdateMenu()
-    {
-        if (isTaskActive)
-        {
-            
-        }
-        else
-        {   
-            gameMenuDictionary.Clear();
-            MenuItemPool.Instance.ReclaimMenuItems();        
-
-            UpdateMenuItems();
-        }
-    }
-
-    private void UpdateMenuItems()
-    {        
-        foreach (MenuItemData menuItemData in currentGameMenu.menuItems)
-        {
-            Transform menuItem = MenuItemPool.Instance.GetMenuItem(gameMenu).transform;
-
-            string menuHeader = menuItemData.header;
-            menuItem.GetComponentInChildren<Text>().text = menuHeader; // TODO this could throw exception if there is no Text component in the button            
-
-            Menu menu = menuItemData.menu;
-            if (menu == null)
-            {
-                menu = new Menu();
-                menu.menuItems = new List<MenuItemData>();
-                menu.header = menuHeader;
-            }
-            gameMenuDictionary.Add(menuHeader, menu);            
-
-            Button button = menuItem.GetComponent<Button>(); // TODO check if null
-            // If menuItemData.menu is used directly in AddListener by the time it is called it will not be available
-            button.onClick.AddListener(() => OpenMenu(gameMenuDictionary[menuHeader]));
-
-            if (menuHeader == "Create a new Treasure Hunt")
-            {
-                button.onClick.AddListener(gameManager.CreateTreasureHunt);
-            }
-
-            GameObject removeButton = menuItem.FindChild("Remove").gameObject;  // TODO check if null | constant 
-            if (menuItemData.isRemoveRequired)
-            {
-                removeButton.SetActive(true);
-            }
-            else
-            {
-                removeButton.SetActive(false);
-            }
-
-            GameObject checkMark = menuItem.FindChild("Check mark").gameObject; // TODO check if null | constant 
-            if (menuItemData.isCheckMarkRequired)
-            {
-                checkMark.SetActive(true);
-            }
-            else
-            {
-                checkMark.SetActive(false);
-            }
-        }
-
-        if (currentGameMenu.menuType == Menu.GameMenuType.Problem)
-        {
-            MenuItemPool.Instance.GetAddProblem(gameMenu);
-        }
-        else if (currentGameMenu.menuType == Menu.GameMenuType.Task)
-        {
-            MenuItemPool.Instance.GetAddTask(gameMenu);
-        }
-
-
-        // Show/hide back panel
-        if (currentGameMenu.header == "Main Menu")
-        {
-            // Back button is not needed
-            backPanel.gameObject.SetActive(false);
-        }
-        else
-        {
-            // Back button is needed            
-            backPanel.gameObject.SetActive(true);
-            //Menu previousMenu = menuStack.Peek();           
-        }
-    }
+        
+        gameManager.GameModeChanged += OnGameModeChanged;
+        gameManager.TreasureHuntCreated += OnTreasureHuntCreated;
+        gameManager.ProblemCreated += OnProblemCreated;
+        gameManager.TaskCreated += OnTaskCreated;
+    }           
 
     private void OnTreasureHuntCreated()
     {
         // TODO In GameMenu show appropriate options
-    }
-    
-    private void OnTaskActivated()
-    {
-        menuItemsPanel.gameObject.SetActive(false);
-        taskPanel.gameObject.SetActive(true);
-        answerPanel.gameObject.SetActive(true);
+        gameManager.GoToCreationMode();
 
-        isTaskActive = true;
-
-        SetUIToGameMode(gameManager.GameMode);
-    }     
-
-    private void OnTaskDeactivated()
-    {
-        menuItemsPanel.gameObject.SetActive(true);
-        taskPanel.gameObject.SetActive(false);
-        answerPanel.gameObject.SetActive(false);
-
-        isTaskActive = false;
-
-        SetUIToGameMode(gameManager.GameMode);
+        UpdateGameMenu(gameManager.CurrentTreasureHunt.Title, gameManager.CurrentTreasureHunt.Problems, MenuItemType.Problem);
+        MenuItemPool.Instance.GetAddProblem(gameMenu);
     }
 
-    private void SetUIToGameMode(GameMode gameMode)
+    private void OnProblemCreated()
     {
-        bool isInPlayMode = gameMode == GameMode.PlayMode;
+        // Game is already in Creation Mode
+        UpdateGameMenu(gameManager.CurrentProblem.Title, gameManager.CurrentProblem.Tasks, MenuItemType.Task);
+        MenuItemPool.Instance.GetAddTask(gameMenu);
+    }
 
-        // Header
-        headerText.gameObject.SetActive(isInPlayMode);
-        headerInputField.gameObject.SetActive(!isInPlayMode);
+    private void OnTaskCreated()
+    {
+        // Game is in Creation Mode
+        ActivateTask(gameManager.CurrentTask);
+    }
+
+    private void OnGameModeChanged()
+    {
+        bool isInPlayMode = gameManager.GameMode == GameMode.PlayMode;
+
+        // Header // TODO this should be set somewhere else
+        //headerText.gameObject.SetActive(isInPlayMode);
+        //headerInputField.gameObject.SetActive(!isInPlayMode);
 
         // Task
         taskText.gameObject.SetActive(isInPlayMode);
@@ -291,5 +333,13 @@ public class UIManager : MonoBehaviour
         // Answer
         answerPlayOptions.gameObject.SetActive(isInPlayMode);
         answerCreationOptions.gameObject.SetActive(!isInPlayMode);
-    }
+    }    
 }
+
+public class GameMenuTuple
+{
+    public string Title { get; set; }
+    public IEnumerable ListOfItems { get; set; }
+    public MenuItemType MenuItemType { get; set; }
+}
+

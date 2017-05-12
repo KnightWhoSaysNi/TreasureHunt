@@ -5,21 +5,20 @@ using System.Text;
 
 namespace TreasureHunt
 {
-    [Serializable]
-    public class TreasureHunt
+    [Serializable] 
+    public class TreasureHunt : ITitle
     {
         public TreasureHunt(string title)
         {
             this.Title = title;
-            Problems = new Dictionary<string, Problem>();
+            Problems = new List<Problem>();
         }
 
-        public Dictionary<string, Problem> Problems { get; set; }
+        public List<Problem> Problems { get; set; }
         public string Title { get; set; }
         public bool IsCompleted { get; set; }
         public float PercentComplete { get; set; }
         public Task LastPlayedTask { get; set; }
     }
-
 }
 
