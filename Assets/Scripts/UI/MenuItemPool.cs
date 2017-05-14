@@ -7,13 +7,15 @@ using UnityEngine.UI;
 public class MenuItemPool : MonoBehaviour
 {
     private int currentItemCount;
-    private Queue<MenuItem> inactiveMenuItems;
-    private Queue<MenuItem> activeMenuItems;
+    private List<MenuItem> inactiveMenuItems;
+    private List<MenuItem> activeMenuItems;
 
     public int poolStartingCount = 10; // TODO perhaps put this in constants
     public MenuItem menuItemPrefab;
-    public MenuItem addProblem;
-    public MenuItem addTask;
+
+    public GameObject addTreasureHunt;
+    public GameObject addProblem;
+    public GameObject addTask;
 
     public static MenuItemPool Instance { get; private set; }  
 
@@ -24,44 +26,68 @@ public class MenuItemPool : MonoBehaviour
             ExpandPool();
         }
 
-        MenuItem menuItem = inactiveMenuItems.Dequeue();
-        ActivateMenuItem(menuItem, parent);
-        activeMenuItems.Enqueue(menuItem);
+        MenuItem menuItem = inactiveMenuItems[0];
+        inactiveMenuItems.RemoveAt(0);
+        ActivateItem(menuItem.gameObject, parent);
+        activeMenuItems.Add(menuItem);
 
         return menuItem;
     }
 
-    public MenuItem GetAddProblem(Transform parent)
-    {
-        ActivateMenuItem(addProblem, parent);
+    #region  - Addition GameObjects -
 
-        return addProblem;
+    public void GetAddTreasureHunt(Transform parent)
+    {
+        ActivateItem(addTreasureHunt, parent);
     }
 
-    public MenuItem GetAddTask(Transform parent)
+    public void GetAddProblem(Transform parent)
     {
-        ActivateMenuItem(addTask, parent);
-
-        return addTask;
+        ActivateItem(addProblem, parent);
     }
+
+    public void GetAddTask(Transform parent)
+    {
+        ActivateItem(addTask, parent);
+    }
+
+    #endregion
 
     public void ReclaimMenuItems()
     {
         while (activeMenuItems.Count > 0)
         {
-            MenuItem menuItem = activeMenuItems.Dequeue();
-            ResetMenuItem(menuItem);
-            inactiveMenuItems.Enqueue(menuItem);
+            MenuItem menuItem = activeMenuItems[0];
+            ReclaimMenuItem(menuItem, 0);
         }
 
+        if (!addTreasureHunt.transform.IsChildOf(this.transform))
+        {
+            DeactivateItem(addTreasureHunt);
+        }
         if (!addProblem.transform.IsChildOf(this.transform))
         {
-            ResetMenuItem(addProblem);
+            DeactivateItem(addProblem);
         }
         if (!addTask.transform.IsChildOf(this.transform))
         {
-            ResetMenuItem(addTask);
+            DeactivateItem(addTask);
         }
+    }
+
+    public void ReclaimMenuItem(MenuItem menuItem, int index = -1)
+    {
+        if (index != -1)
+        {
+            activeMenuItems.RemoveAt(index);
+        }
+        else
+        {
+            activeMenuItems.Remove(menuItem);
+        }
+
+        ResetMenuItem(menuItem);
+        inactiveMenuItems.Add(menuItem);
     }
 
     private void Awake()
@@ -75,8 +101,8 @@ public class MenuItemPool : MonoBehaviour
             Destroy(this);
         }
 
-        inactiveMenuItems = new Queue<MenuItem>();
-        activeMenuItems = new Queue<MenuItem>();
+        inactiveMenuItems = new List<MenuItem>();
+        activeMenuItems = new List<MenuItem>();
 
         currentItemCount = poolStartingCount;
         InstantiateMenuItems(currentItemCount);
@@ -94,7 +120,7 @@ public class MenuItemPool : MonoBehaviour
             MenuItem newMenuItem = Instantiate(menuItemPrefab);
             ResetMenuItem(newMenuItem);
 
-            inactiveMenuItems.Enqueue(newMenuItem);
+            inactiveMenuItems.Add(newMenuItem);
         }        
     }
 
@@ -106,7 +132,7 @@ public class MenuItemPool : MonoBehaviour
 
     private void ResetMenuItem(MenuItem menuItem)
     {
-        DeactivateMenuItem(menuItem);
+        DeactivateItem(menuItem.gameObject);
 
         Button button = menuItem.GetComponent<Button>(); // TODO protect against null reference exceptions        
         button.onClick.RemoveAllListeners();
@@ -116,16 +142,16 @@ public class MenuItemPool : MonoBehaviour
         menuItem.checkMark.SetActive(false);
     }
 
-    private void ActivateMenuItem(MenuItem menuItem, Transform parent)
+    private void ActivateItem(GameObject item, Transform parent)
     {
-        menuItem.transform.SetParent(parent, false);
-        menuItem.gameObject.SetActive(true);
+        item.transform.SetParent(parent, false);
+        item.SetActive(true);
     }
 
-    private void DeactivateMenuItem(MenuItem menuItem)
+    private void DeactivateItem(GameObject item)
     {
-        menuItem.transform.SetParent(this.transform, false);
-        menuItem.gameObject.SetActive(false);
+        item.transform.SetParent(this.transform, false);
+        item.SetActive(false);
     }
 }
 

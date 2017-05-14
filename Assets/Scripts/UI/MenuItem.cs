@@ -16,5 +16,5 @@ public class MenuItem : MonoBehaviour
     public TreasureHunt.Task Task { get; set; }
 }
 
-public enum MenuItemType { TreasureHunt, Problem, Task, Addition}
+public enum MenuItemType { TreasureHunt, Problem, Task}
 

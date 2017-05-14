@@ -11,14 +11,20 @@ public class GameManager : MonoBehaviour
 {
     private GameMode gameMode;
 
+    public event Action GameModeChanged;
+
     public event Action TreasureHuntCreated;
     public event Action ProblemCreated;
     public event Action TaskCreated;
-    public event Action GameModeChanged;
+    public event Action HintCreated;
+
+    public event Action HintRemoved;
 
     public TreasureHunt.TreasureHunt CurrentTreasureHunt { get; set; }
     public Problem CurrentProblem { get; set; }
     public Task CurrentTask { get; set; }
+    public Hint CurrentHint { get; set; }
+
     public GameMode GameMode
     {
         get
@@ -38,7 +44,10 @@ public class GameManager : MonoBehaviour
             }
         }
     }
-    public List<TreasureHunt.TreasureHunt> AllTreasureHunts { get; private set; }
+    public List<TreasureHunt.TreasureHunt> AllTreasureHunts { get; private set; }         
+
+
+    #region - Switch Game Modes - 
 
     public void GoToPlayMode()
     {
@@ -49,8 +58,10 @@ public class GameManager : MonoBehaviour
     {
         GameMode = GameMode.CreationMode;
     }
-    
-    #region - Create Treasure Hunt/Problem/Task -
+
+    #endregion
+
+    #region - Create Treasure Hunt/Problem/Task/Hint -
 
     public void CreateTreasureHunt()
     {
@@ -88,26 +99,58 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void CreateHint()
+    {
+        Hint newHint = new Hint();
+        CurrentTask.AllHints.Add(newHint);
+        CurrentTask.UnrevealedHints.Add(newHint);
+        CurrentHint = newHint;
+
+        if (HintCreated != null)
+        {
+            HintCreated();
+        }
+    }
+
     #endregion
 
-    #region - Change Title -
-
-    public void ChangeTreasureHuntTitle(string newTitle)
+    #region - Remove TreasureHunt/Problem/Task/Hint -
+    
+    public void RemoveTreasureHunt(TreasureHunt.TreasureHunt treasureHunt)
     {
-        CurrentTreasureHunt.Title = newTitle;
+        AllTreasureHunts.Remove(treasureHunt);
+    } 
+
+    public void RemoveProblem(Problem problem)
+    {
+        CurrentTreasureHunt.Problems.Remove(problem);
     }
 
-    public void ChangeProblemTitle(string newTitle)
+    public void RemoveTask(Task task)
     {
-        CurrentProblem.Title = newTitle;
+        CurrentProblem.Tasks.Remove(task);
     }
 
-    public void ChangeTaskTitle(string newTitle)
+    public void RemoveHint()
     {
-        CurrentTask.Title = newTitle;
+        SilentlyRemoveHint(CurrentHint);        
+
+        if (HintRemoved != null)
+        {
+            HintRemoved();
+        }
     }
 
-    #endregion    
+    public void SilentlyRemoveHint(Hint hint)
+    {
+        CurrentTask.AllHints.Remove(hint);
+        CurrentTask.RevealedHints.Remove(hint);
+        CurrentTask.UnrevealedHints.Remove(hint);
+
+        CurrentHint = null;
+    }
+
+    #endregion
 
     private void Start()
     {
@@ -124,6 +167,10 @@ public class GameManager : MonoBehaviour
         Task testTask11 = new Task("Test Task 11");
         testTask11.TextClue = "If I was to say \"Ni\", what would your gift to me be?";
         testTask11.Solution.TextSolution = "A shrubbery";
+        testTask11.AllHints.Add(new Hint("Knights who say Ni"));
+        testTask11.AllHints.Add(new Hint("A quote from \"The Holy Grail\""));
+        testTask11.UnrevealedHints.Add(new Hint("Knights who say Ni"));
+        testTask11.UnrevealedHints.Add(new Hint("A quote from \"The Holy Grail\""));
 
         Task testTask12 = new Task("Test Task 12");
         Task testTask21 = new Task("Test Task 21");
@@ -153,6 +200,7 @@ public class GameManager : MonoBehaviour
 
 
         AllTreasureHunts.Add(testTreasureHunt);
+        testTreasureHunt.HintPointsAvailable = 3;
 
         //IFormatter formatter = new BinaryFormatter();
         //Stream stream = new FileStream("My Test Treasure Hunt.bin", FileMode.Create, FileAccess.Write);

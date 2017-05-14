@@ -13,6 +13,7 @@ GameObject:
   - 114: {fileID: 11448320}
   - 114: {fileID: 11405376}
   - 114: {fileID: 11420092}
+  - 114: {fileID: 11483776}
   m_Layer: 5
   m_Name: Menu Item
   m_TagString: Untagged
@@ -314,7 +315,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 11401254}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 0}
+        m_MethodName: RemoveMenuItem
+        m_Mode: 2
+        m_Arguments:
+          m_ObjectArgument: {fileID: 11420092}
+          m_ObjectArgumentAssemblyTypeName: MenuItem, Assembly-CSharp
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_TypeName: UnityEngine.UI.Button+ButtonClickedEvent, UnityEngine.UI, Version=1.0.0.0,
       Culture=neutral, PublicKeyToken=null
 --- !u!114 &11476210
@@ -350,6 +362,19 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: X
+--- !u!114 &11483776
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 108436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06fa6a4e48e23034a8c15ac674b8ab53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiManager: {fileID: 0}
+  menuItem: {fileID: 11420092}
 --- !u!222 &22212394
 CanvasRenderer:
   m_ObjectHideFlags: 1
