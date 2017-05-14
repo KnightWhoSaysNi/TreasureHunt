@@ -8,5 +8,7 @@ namespace TreasureHunt
     public interface ITitle
     {
         string Title { get; set; }
+
+        void ChangeTitle(string newTitle);
     }
 }

@@ -18,7 +18,6 @@ namespace TreasureHunt
             Text = hintText;
         }
 
-
         public string Text { get; set; }
     }
 }

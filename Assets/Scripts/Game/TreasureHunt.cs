@@ -6,7 +6,7 @@ using System.Text;
 namespace TreasureHunt
 {
     [Serializable] 
-    public class TreasureHunt : ITitle
+    public class TreasureHunt : TitledObject
     {
         public TreasureHunt(string title)
         {
@@ -15,10 +15,10 @@ namespace TreasureHunt
         }
 
         public List<Problem> Problems { get; set; }
-        public string Title { get; set; }
         public bool IsCompleted { get; set; }
         public float PercentComplete { get; set; }
         public Task LastPlayedTask { get; set; }
+        public int HintPointsAvailable { get; set; }
     }
 }
 

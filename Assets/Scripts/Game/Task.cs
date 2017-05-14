@@ -6,12 +6,15 @@ using System.Text;
 namespace TreasureHunt
 {
     [Serializable]    
-    public class Task : ITitle
+    public class Task : TitledObject
     {
         public Task(string title)
         {
             this.Title = title;
-            Hints = new List<Hint>();
+
+            AllHints = new List<Hint>();
+            UnrevealedHints = new List<Hint>();
+            RevealedHints = new List<Hint>();
             Solution = new Solution();
             TextClue = string.Empty;
         }
@@ -27,16 +30,17 @@ namespace TreasureHunt
         }
 
         public Problem Problem { get; private set; }
-        public string Title { get; set; }
         public string TextClue { get; set; }
         public Solution Solution { get; set; }
         public bool IsSolved { get; set; }
-        public List<Hint> Hints { get; set; }
-        public bool HasHints
+        public List<Hint> AllHints { get; set; }
+        public List<Hint> UnrevealedHints { get; private set; }
+        public List<Hint> RevealedHints { get; private set; }
+        public bool HasHints // TODO is this necessary
         {
             get
             {
-                return Hints.Count > 0;
+                return AllHints.Count > 0;
             }
         }
     }
