@@ -11,7 +11,7 @@ public class UIManager : MonoBehaviour
 
     private Transform currentMenu;
     private Stack<Transform> menuStack;
-    private Stack<GameMenuTuple> gameMenuStack;    
+    private Stack<GameMenuTuple> gameMenuStack;
     
     #region - Inspector Variables -
 
@@ -59,6 +59,7 @@ public class UIManager : MonoBehaviour
     [Header("Save reminder")]
     public GameObject saveReminderPanel;
     public Text saveReminderText;
+    public GameObject saveReminderButtons;
 
     [Header("Back")]
     public RectTransform backPanel;
@@ -80,7 +81,19 @@ public class UIManager : MonoBehaviour
         {
             if (gameMenuStack.Peek().MenuItemType == MenuItemType.Task)
             {
-                // As the last game menu held a Task, Task panel is currently active
+                // As the last item on the stack is a Task, Task panel is currently active
+
+                // A check to see if Task, Answer or Hint input fields are empty
+                if (!CanTaskBeSaved(false))
+                {
+                    saveReminderPanel.SetActive(true);
+                    saveReminderText.text = "Your task is not yet saved. If you go back it will be deleted. Are you sure you want to go back?";
+                    saveReminderButtons.SetActive(true);
+
+                    // Stopping the 'Back' process until the player decides what to do
+                    return;                    
+                }
+
                 gameMenu.gameObject.SetActive(true);
                 taskPanel.gameObject.SetActive(false);
                 answerPanel.gameObject.SetActive(false);
@@ -97,6 +110,31 @@ public class UIManager : MonoBehaviour
             UpdateCurrentMenu(menu);
             currentMenu.gameObject.SetActive(true);
         }
+    }
+
+    public void ConfirmGoingBack(bool isBackConfirmed)
+    {
+        if (isBackConfirmed)
+        {
+            ContinueWithBackMethod();
+        }
+        else
+        {
+            // Player decided to stay and complete the task
+        }
+    }
+
+    private void ContinueWithBackMethod()
+    {
+        // Player decided to delete the task and go back
+        gameManager.RemoveTask(gameManager.CurrentTask);
+
+        gameMenu.gameObject.SetActive(true);
+        taskPanel.gameObject.SetActive(false);
+        answerPanel.gameObject.SetActive(false);
+
+        GameMenuTuple previousGameMenu = gameMenuStack.Pop();
+        UpdateGameMenu(previousGameMenu.Title, previousGameMenu.ListOfItems, previousGameMenu.MenuItemType);
     }
 
     #endregion
@@ -272,32 +310,18 @@ public class UIManager : MonoBehaviour
 
     public void SaveTask()
     {
-        if (taskInputField.text == string.Empty)
+        bool canTaskBeSaved = CanTaskBeSaved();
+        if (!canTaskBeSaved)
         {
-            saveReminderPanel.SetActive(true);
-            saveReminderText.text = "You cannot save an empty task. Please write some clue or delete the task.";
-            return;
-        }        
-
-        if (answerInputField.text == string.Empty)
-        {
-            saveReminderPanel.SetActive(true);
-            saveReminderText.text = "You cannot save a task without an answer.";
+            // Task cannot be saved at the moment
             return;
         }
         
         if (gameManager.CurrentHint != null)
-        {
-            if (!CanHintBeSaved())
-            {
-                // Hint InputField is empty
-                return;
-            }
-
+        {    
             SaveHint();
         }
-
-        // Task is saved
+        
         gameManager.CurrentTask.TextClue = taskInputField.text;
         gameManager.CurrentTask.Solution.TextSolution = answerInputField.text; // TODO incorporate the location into solution
 
@@ -338,7 +362,8 @@ public class UIManager : MonoBehaviour
                 RefreshHintNavigation();
 
                 hintPanel.gameObject.SetActive(true);
-                hintText.text = gameManager.CurrentTask.RevealedHints[0].Text;
+                gameManager.CurrentHint = gameManager.CurrentTask.RevealedHints[0];
+                hintText.text = gameManager.CurrentHint.Text;
             }
 
             if (gameManager.CurrentTask.IsSolved)
@@ -391,6 +416,38 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    private bool CanTaskBeSaved(bool isReminderNeeded = true)
+    {
+        bool canTaskBeSaved = true;
+        string saveMessage = string.Empty;
+
+        if (taskInputField.text == string.Empty)
+        {
+            saveMessage = "You cannot save an empty task. Please write some clue or delete the task.";
+            canTaskBeSaved = false;
+        }
+        else if (answerInputField.text == string.Empty)
+        {
+            saveReminderPanel.SetActive(true);
+            saveMessage = "You cannot save a task without an answer.";
+            canTaskBeSaved = false;
+        }
+        else if (gameManager.CurrentHint != null && !CanHintBeSaved(false))
+        {
+            // Hint InputField is empty
+            saveMessage = "You cannot save an empty hint. Please either add some text or remove the hint.";
+            canTaskBeSaved = false;
+        }
+
+        if (isReminderNeeded)
+        {
+            saveReminderPanel.SetActive(true);
+            saveReminderText.text = saveMessage;
+        }
+
+        return canTaskBeSaved;
+    }
+
     #endregion
 
     #region - Hint related methods -
@@ -406,6 +463,8 @@ public class UIManager : MonoBehaviour
 
         hintPanel.gameObject.SetActive(true);
         hintText.text = hint.Text;
+
+        RefreshHintNavigation();
     }
 
     public void ShowPreviousHint()
@@ -447,17 +506,22 @@ public class UIManager : MonoBehaviour
         gameManager.CurrentHint.Text = hintInputField.text;
     }
 
-    private bool CanHintBeSaved()
+    private bool CanHintBeSaved(bool isReminderNeeded = true)
     {
+        bool canHintBeSaved = true;
+
         if (hintInputField.text == string.Empty)
         {
-            saveReminderPanel.SetActive(true);
-            saveReminderText.text = "Current hint is empty. Please either add some text or remove the hint.";
+            canHintBeSaved = false;
 
-            return false;
+            if (isReminderNeeded)
+            {
+                saveReminderPanel.SetActive(true);
+                saveReminderText.text = "Current hint is empty. Please either add some text or remove the hint.";
+            }
         }
 
-        return true;
+        return canHintBeSaved;
     }
 
     private void ShowHint(int direction)
