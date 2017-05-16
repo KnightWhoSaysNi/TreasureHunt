@@ -4002,7 +4002,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
       - m_Target: {fileID: 1529416078}
-        m_MethodName: IsBackConfirmed
+        m_MethodName: ConfirmGoingBack
         m_Mode: 6
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7003,7 +7003,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
       - m_Target: {fileID: 1529416078}
-        m_MethodName: IsBackConfirmed
+        m_MethodName: ConfirmGoingBack
         m_Mode: 6
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
