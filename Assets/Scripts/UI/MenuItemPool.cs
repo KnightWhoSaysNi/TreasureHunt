@@ -134,7 +134,8 @@ public class MenuItemPool : MonoBehaviour
     {
         DeactivateItem(menuItem.gameObject);
 
-        Button button = menuItem.GetComponent<Button>(); // TODO protect against null reference exceptions        
+        Button button = menuItem.GetComponent<Button>(); // TODO protect against null reference exceptions    
+        button.interactable = true;    
         button.onClick.RemoveAllListeners();
 
         menuItem.text.text = string.Empty;

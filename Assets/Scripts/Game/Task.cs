@@ -16,20 +16,20 @@ namespace TreasureHunt
             UnrevealedHints = new List<Hint>();
             RevealedHints = new List<Hint>();
             Solution = new Solution();
-            TextClue = string.Empty;
+            TextClue = string.Empty; 
         }
 
-        public Task(string title, Problem problem) : this(title)
-        {
-            this.Problem = problem;
-        }
+        //public Task(string title, Problem problem) : this(title)
+        //{
+        //    this.Problem = problem;
+        //}
 
-        public Task(string title, Problem problem, string textClue) : this(title, problem)
-        {
-            this.TextClue = textClue;
-        }
+        //public Task(string title, Problem problem, string textClue) : this(title, problem)
+        //{
+        //    this.TextClue = textClue;
+        //}
 
-        public Problem Problem { get; private set; }
+        //public Problem Problem { get; private set; }
         public string TextClue { get; set; }
         public Solution Solution { get; set; }
         public bool IsSolved { get; set; }

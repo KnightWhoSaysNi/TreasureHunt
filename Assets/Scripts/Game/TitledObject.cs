@@ -5,6 +5,7 @@ using System.Text;
 
 namespace TreasureHunt
 {
+    [Serializable]
     public class TitledObject : ITitle
     {
         public string Title { get; set; }

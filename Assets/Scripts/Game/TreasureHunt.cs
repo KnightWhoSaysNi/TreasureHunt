@@ -15,7 +15,20 @@ namespace TreasureHunt
         }
 
         public List<Problem> Problems { get; set; }
-        public bool IsCompleted { get; set; }
+        public bool IsCompleted
+        {
+            get
+            {
+                foreach (Problem problem in Problems)
+                {
+                    if (!problem.IsSolved)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
         public float PercentComplete { get; set; }
         public Task LastPlayedTask { get; set; }
         public int HintPointsAvailable { get; set; }
