@@ -13,19 +13,19 @@ namespace TreasureHunt
             TextSolution = string.Empty;
         }
 
-        public Solution(string textSolution, bool hasLocationSolution = false)
+        public Solution(string textSolution)
         {
             this.TextSolution = textSolution;
-            this.HasLocationSolution = hasLocationSolution;
         }
 
-        public Solution(string textSolution, Location locationSolution) : this(textSolution, true)
+        public Solution(string textSolution, Location locationSolution) : this(textSolution)
         {
+            HasLocationSolution = true;
             this.LocationSolution = locationSolution;
         }
 
         public string TextSolution { get; set; }
         public bool HasLocationSolution { get; set; }
-        public Location LocationSolution { get; set; } // TODO maybe guard against someone trying to call this even if HasLocationSolution == false
+        public Location LocationSolution { get; set; } // TODO maybe guard against a call to this when HasLocationSolution == false
     }
 }

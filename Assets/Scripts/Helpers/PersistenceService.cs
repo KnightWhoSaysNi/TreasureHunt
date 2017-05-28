@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Threading;
-using TreasureHunt;
 using UnityEngine;
 
 public sealed class PersistenceService 
@@ -17,7 +15,15 @@ public sealed class PersistenceService
     private string oldTitle;
     private BackgroundWorker saveWorker;
     private BackgroundWorker loadWorker;
+    private BackgroundWorker removeWorker;
     
+    static PersistenceService()
+    {
+        persistentDataPath = Constants.persistentDataPath;
+        MonoBehaviour.print("Persistent data path on android is: " + persistentDataPath);
+        lockObject = new object();
+    }
+
     private PersistenceService()
     {   
         saveWorker = new BackgroundWorker();
@@ -27,12 +33,9 @@ public sealed class PersistenceService
         loadWorker = new BackgroundWorker();
         loadWorker.DoWork += LoadWorkerDoWork;
         loadWorker.RunWorkerCompleted += OnLoadWorkerCompleted;
-    }
 
-    static PersistenceService()
-    {
-        persistentDataPath = Constants.persistentDataPath;
-        lockObject = new object();
+        removeWorker = new BackgroundWorker();
+        removeWorker.DoWork += RemoveWorkerDoWork;
     }
 
     public event Action Saved;
@@ -57,7 +60,10 @@ public sealed class PersistenceService
     public void SaveTreasureHunt(TreasureHunt.TreasureHunt treasureHunt, string oldTitle = null) // Main thread // TODO remove setting path as an argument
     {
         this.oldTitle = oldTitle;
-        saveWorker.RunWorkerAsync(treasureHunt);                     
+        if (!saveWorker.IsBusy)
+        {
+            saveWorker.RunWorkerAsync(treasureHunt);                     
+        }
     }
 
     // TODO catch exceptions
@@ -65,6 +71,14 @@ public sealed class PersistenceService
     {
         MonoBehaviour.print("LoadTreasureHunts on: " + System.Threading.Thread.CurrentThread.ManagedThreadId);       
         loadWorker.RunWorkerAsync();
+    }
+
+    public void RemoveTreasureHunt(TreasureHunt.TreasureHunt treasureHunt)
+    {
+        if (!removeWorker.IsBusy)
+        {
+            removeWorker.RunWorkerAsync(treasureHunt);
+        }
     }
     
     private void SaveWorkerDoWork(object sender, DoWorkEventArgs e) // IS in fact on a separate thread
@@ -75,15 +89,15 @@ public sealed class PersistenceService
             throw new ArgumentException("You must use a TreasureHunt as argument for DoWorkEventArgs");
         }
 
-        string filePath = persistentDataPath + "/" + treasureHunt.Title + Constants.extension;
-        string oldFilePath = persistentDataPath + "/" + oldTitle + Constants.extension;
+        string filePath = persistentDataPath + "/" + treasureHunt.Title + Constants.Extension;
+        string oldFilePath = persistentDataPath + "/" + oldTitle + Constants.Extension;       
 
         // Normal save
         SaveFile(treasureHunt, filePath);
 
         if (oldTitle != null && File.Exists(oldFilePath))
         {
-            // Renaming a file
+            // Treasure Hunt was renamed and saved as a new file so the old one is deleted
             File.Delete(oldFilePath);
 
             // Necessary for the next method call
@@ -128,47 +142,33 @@ public sealed class PersistenceService
         List<TreasureHunt.TreasureHunt> treasureHunts = new List<TreasureHunt.TreasureHunt>();
 
         string searchPattern = "*.th";
-        string[] allTreasureHuntsPaths = Directory.GetFiles(persistentDataPath, searchPattern);
-
-        for (int i = 0; i < allTreasureHuntsPaths.Length; i++)
+        try
         {
-            using (Stream stream = File.Open(allTreasureHuntsPaths[i], FileMode.Open, FileAccess.Read))
-            {
-                BinaryFormatter binFormatter = new BinaryFormatter();
+            string[] allTreasureHuntsPaths = Directory.GetFiles(persistentDataPath, searchPattern);
 
-                TreasureHunt.TreasureHunt treasureHunt = binFormatter.Deserialize(stream) as TreasureHunt.TreasureHunt;
-                if (treasureHunt != null)
+            for (int i = 0; i < allTreasureHuntsPaths.Length; i++)
+            {
+                using (Stream stream = File.Open(allTreasureHuntsPaths[i], FileMode.Open, FileAccess.Read))
                 {
-                    treasureHunts.Add(treasureHunt);
+                    BinaryFormatter binFormatter = new BinaryFormatter();
+
+                    TreasureHunt.TreasureHunt treasureHunt = binFormatter.Deserialize(stream) as TreasureHunt.TreasureHunt;
+                    if (treasureHunt != null)
+                    {
+                        treasureHunts.Add(treasureHunt);
+                    }
                 }
             }
-        }
 
-        System.Timers.Timer timer = new System.Timers.Timer(1000); // THIS NEVER STOPS, EVEN IN EDITOR
-        timer.Elapsed += Timer_Elapsed;
-        timer.Start();
-        while (timerTime > 0)
+            e.Result = treasureHunts;
+        }
+        catch (Exception exc)
         {
-            // do nothing
-            MonoBehaviour.print("waiting for the timer");
+
+            MonoBehaviour.print(exc.Message);
         }
         
-
-        e.Result = treasureHunts;
-    }
-
-    int timerTime = 5;
-    private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-    {
-        if (timerTime > 0)
-        {
-            timerTime--;
-        }
-        else
-        {
-            ((System.Timers.Timer)sender).Stop(); // This should stop the above timer
-        }
-    }
+    }   
 
     private void OnLoadWorkerCompleted(object sender, RunWorkerCompletedEventArgs e) // Not on main thread, but not on the same thread as the worker
     {
@@ -188,6 +188,19 @@ public sealed class PersistenceService
         if (Loaded != null)
         {
             Loaded(treasureHunts);
+        }
+    }
+
+    // TODO Catch exceptions
+    private void RemoveWorkerDoWork(object sender, DoWorkEventArgs e)
+    {
+        TreasureHunt.TreasureHunt treasureHunt = e.Argument as TreasureHunt.TreasureHunt;
+
+        string filePath = persistentDataPath + "/" + treasureHunt.Title + Constants.Extension;
+
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
         }
     }
 }

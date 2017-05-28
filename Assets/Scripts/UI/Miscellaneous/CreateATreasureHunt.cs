@@ -3,7 +3,7 @@ using System.Collections;
 
 public class CreateATreasureHunt : MonoBehaviour
 {
-    public GameManager gameManager;
+    public TreasureHuntManager gameManager;
 
     private void OnEnable()
     {

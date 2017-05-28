@@ -14,14 +14,7 @@ namespace TreasureHunt
             Tasks = new List<Task>();
         }
 
-        //public Problem(string title, TreasureHunt treasureHunt) : this(title)
-        //{
-        //    this.TreasureHunt = treasureHunt;
-        //    treasureHunt.Problems.Add(this);
-        //}
-
         public List<Task> Tasks { get; set; }
-        //public TreasureHunt TreasureHunt { get; set; }
         public bool IsSolved
         {
             get

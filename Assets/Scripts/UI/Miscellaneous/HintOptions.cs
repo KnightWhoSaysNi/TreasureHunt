@@ -6,13 +6,13 @@ public class HintOptions : MonoBehaviour
 {
     private string remainingHintPointsMessage = " hint points remaining";
 
-    public GameManager gameManager;
+    public TreasureHuntManager treasureHuntManager;
 
     [Space(10)]
     public Button revealHint;
     public Text remainingHintPointsText;
 
-    // This MUST be called after UIManager.RevealHint in order to work correctly
+    // This MUST be called after GameManager.RevealHint in order to work correctly
     public void OnRevealHint()
     {
         CheckHintOptions();
@@ -25,9 +25,9 @@ public class HintOptions : MonoBehaviour
 
     private void CheckHintOptions()
     {
-        remainingHintPointsText.text = gameManager.CurrentTreasureHunt.HintPointsAvailable + remainingHintPointsMessage;
+        remainingHintPointsText.text = treasureHuntManager.CurrentTreasureHunt.HintPointsAvailable + remainingHintPointsMessage;
 
-        if (gameManager.CurrentTask.UnrevealedHints.Count != 0 && gameManager.CurrentTreasureHunt.HintPointsAvailable != 0)
+        if (treasureHuntManager.CurrentTask.UnrevealedHints.Count != 0 && treasureHuntManager.CurrentTreasureHunt.HintPointsAvailable != 0)
         {
             revealHint.interactable = true;
         }

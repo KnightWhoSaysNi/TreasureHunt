@@ -8,8 +8,8 @@ public class MenuItemRemoveHandler : MonoBehaviour
 
     private void Start()
     {
-        UIManager uiManager = GameObject.FindGameObjectWithTag("Game Manager").GetComponent<UIManager>();
+        GameManager gameManager = GameObject.FindGameObjectWithTag("Game Manager").GetComponent<GameManager>();
         Button button = menuItem.removeButton.GetComponent<Button>();
-        button.onClick.AddListener(() => uiManager.RemoveMenuItem(menuItem));
+        button.onClick.AddListener(() => gameManager.RemoveMenuItem(menuItem));
     }
 }
