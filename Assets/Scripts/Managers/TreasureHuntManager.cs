@@ -7,8 +7,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 
-// TODO Add DataPersistanceManager
-public class GameManager : MonoBehaviour
+public class TreasureHuntManager : MonoBehaviour
 {
     private bool areTreasureHuntsLoaded;
     private bool isTreasureHuntSaved;
@@ -132,7 +131,7 @@ public class GameManager : MonoBehaviour
     public void RemoveTreasureHunt(TreasureHunt.TreasureHunt treasureHunt)
     {
         AllTreasureHunts.Remove(treasureHunt);
-        // TODO add remove .th to persistence service
+        PersistenceService.Instance.RemoveTreasureHunt(treasureHunt);
     } 
 
     public void RemoveProblem(Problem problem)
@@ -172,6 +171,28 @@ public class GameManager : MonoBehaviour
 
     #endregion
 
+    #region - Change Hint Points -
+
+    public void ChangeTreasureHuntHintPoints(int newHintPointValue)
+    {
+        if (CurrentTreasureHunt.StartingHintPoints != newHintPointValue)
+        {
+            CurrentTreasureHunt.StartingHintPoints = newHintPointValue;
+            SaveTreasureHunt();
+        }
+    }
+
+    public void ChangeProblemHintPoints(int newHintPointValue)
+    {
+        if (CurrentProblem.HintPoints != newHintPointValue)
+        {
+            CurrentProblem.HintPoints = newHintPointValue;
+            SaveTreasureHunt();
+        }
+    }
+
+    #endregion
+
     public void SaveTreasureHunt(string oldTitle = null)
     {
         if (TreasureHuntSaveStarted != null)
@@ -194,6 +215,15 @@ public class GameManager : MonoBehaviour
         return false;
     }
 
+    public bool IsSolutionCorrect(string textSolution)
+    {
+        if (CurrentTask.Solution.TextSolution.Trim().ToLower() == textSolution.Trim().ToLower())
+        {
+            return true;
+        }
+
+        return false;
+    }
 
     private void Update()
     {
@@ -226,7 +256,7 @@ public class GameManager : MonoBehaviour
 
         PersistenceService.Instance.LoadTreasureHunts();       
 
-        PersistenceService.Instance.Loaded += Instance_Loaded;   
+        PersistenceService.Instance.Loaded += Instance_Loaded;
 
         //File.Move("My Test Treasure Hunt.bin", "Renamed Test Treasure Hunt.bin");
     }
