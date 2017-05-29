@@ -9,11 +9,14 @@ using System.IO;
 
 public class TreasureHuntManager : MonoBehaviour
 {
-    private bool areTreasureHuntsLoaded;
-    private bool isTreasureHuntSaved;
-    private GameMode gameMode;
+    #region - Fields -
 
-    public event Action GameModeChanged;
+    private bool areTreasureHuntsLoaded;
+    private bool isTreasureHuntSaved;    
+
+    #endregion
+
+    #region - Events -    
 
     public event Action TreasureHuntsLoaded;
     public event Action TreasureHuntSaveStarted;
@@ -25,45 +28,20 @@ public class TreasureHuntManager : MonoBehaviour
     public event Action HintCreated;
     public event Action HintRemoved;
 
+    #endregion
+
+    #region - Properties -
+        
     public TreasureHunt.TreasureHunt CurrentTreasureHunt { get; set; }
     public Problem CurrentProblem { get; set; }
     public Task CurrentTask { get; set; }
     public Hint CurrentHint { get; set; }
-
-    public GameMode GameMode
-    {
-        get
-        {
-            return gameMode;
-        }
-        set
-        {
-            if (gameMode != value)
-            {
-                gameMode = value;
-
-                if (GameModeChanged != null)
-                {
-                    GameModeChanged();
-                }
-            }
-        }
-    }
+    
     public List<TreasureHunt.TreasureHunt> AllTreasureHunts { get; private set; }
 
-    #region - Switch Game Modes - 
-
-    public void GoToPlayMode()
-    {
-        GameMode = GameMode.PlayMode;
-    }
-
-    public void GoToCreationMode()
-    {
-        GameMode = GameMode.CreationMode;
-    }
-
     #endregion
+
+    #region - Public Methods -    
 
     #region - Create Treasure Hunt/Problem/Task/Hint -
 
@@ -71,7 +49,7 @@ public class TreasureHuntManager : MonoBehaviour
     {
         TreasureHunt.TreasureHunt newTreasureHunt = new TreasureHunt.TreasureHunt("Unnamed Treasure Hunt " + (AllTreasureHunts.Count + 1)); // TODO 
         AllTreasureHunts.Add(newTreasureHunt);
-        CurrentTreasureHunt = newTreasureHunt;
+        CurrentTreasureHunt = newTreasureHunt;        
 
         if (TreasureHuntCreated != null)
         {
@@ -225,6 +203,10 @@ public class TreasureHuntManager : MonoBehaviour
         return false;
     }
 
+    #endregion
+
+    #region - Private Methods -
+
     private void Update()
     {
         if (isTreasureHuntSaved)
@@ -250,15 +232,9 @@ public class TreasureHuntManager : MonoBehaviour
 
     private void Start()
     {
-        GameMode = GameMode.PlayMode;
-
-        PersistenceService.Instance.Saved += OnSaved;
-
         PersistenceService.Instance.LoadTreasureHunts();       
-
         PersistenceService.Instance.Loaded += Instance_Loaded;
-
-        //File.Move("My Test Treasure Hunt.bin", "Renamed Test Treasure Hunt.bin");
+        PersistenceService.Instance.Saved += OnSaved;
     }
 
     private void Instance_Loaded(List<TreasureHunt.TreasureHunt> obj)
@@ -271,6 +247,8 @@ public class TreasureHuntManager : MonoBehaviour
     {
         isTreasureHuntSaved = true;
     }
+
+    #endregion
 }
 
 public enum GameMode { PlayMode, CreationMode };

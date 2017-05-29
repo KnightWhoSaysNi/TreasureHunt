@@ -20,7 +20,6 @@ public sealed class PersistenceService
     static PersistenceService()
     {
         persistentDataPath = Constants.persistentDataPath;
-        MonoBehaviour.print("Persistent data path on android is: " + persistentDataPath);
         lockObject = new object();
     }
 
@@ -57,7 +56,7 @@ public sealed class PersistenceService
     }        
 
     // TODO catch exceptions
-    public void SaveTreasureHunt(TreasureHunt.TreasureHunt treasureHunt, string oldTitle = null) // Main thread // TODO remove setting path as an argument
+    public void SaveTreasureHunt(TreasureHunt.TreasureHunt treasureHunt, string oldTitle = null) // Main thread
     {
         this.oldTitle = oldTitle;
         if (!saveWorker.IsBusy)
@@ -69,7 +68,6 @@ public sealed class PersistenceService
     // TODO catch exceptions
     public void LoadTreasureHunts() // Main thread // TODO remove setting path as an argument
     {
-        MonoBehaviour.print("LoadTreasureHunts on: " + System.Threading.Thread.CurrentThread.ManagedThreadId);       
         loadWorker.RunWorkerAsync();
     }
 
@@ -141,7 +139,7 @@ public sealed class PersistenceService
     {
         List<TreasureHunt.TreasureHunt> treasureHunts = new List<TreasureHunt.TreasureHunt>();
 
-        string searchPattern = "*.th";
+        string searchPattern = "*" + Constants.Extension;
         try
         {
             string[] allTreasureHuntsPaths = Directory.GetFiles(persistentDataPath, searchPattern);

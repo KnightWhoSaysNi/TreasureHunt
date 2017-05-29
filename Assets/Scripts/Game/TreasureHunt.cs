@@ -54,7 +54,7 @@ namespace TreasureHunt
         {
             get
             {
-                int hintPoints = StartingHintPoints;
+                int hintPoints = StartingHintPoints - UsedHintPoints;
                 foreach (var problem in Problems)
                 {
                     if (problem.IsSolved)
@@ -64,9 +64,13 @@ namespace TreasureHunt
                 }
                 return hintPoints;
             }
-            set { }
+            set
+            {
+            }
         }
+        public int UsedHintPoints { get; set; }
         public int StartingHintPoints { get; set; }
+        public string Password { get; set; }
     }
 }
 

@@ -4,8 +4,6 @@ using UnityEngine.UI;
 
 public class HintOptions : MonoBehaviour
 {
-    private string remainingHintPointsMessage = " hint points remaining";
-
     public TreasureHuntManager treasureHuntManager;
 
     [Space(10)]
@@ -25,6 +23,9 @@ public class HintOptions : MonoBehaviour
 
     private void CheckHintOptions()
     {
+        string remainingHintPointsMessage = (treasureHuntManager.CurrentTreasureHunt.HintPointsAvailable == 1) ? 
+            Constants.RemainingHintPointsMessageSingular : Constants.RemainingHintPointsMessagePlural;
+
         remainingHintPointsText.text = treasureHuntManager.CurrentTreasureHunt.HintPointsAvailable + remainingHintPointsMessage;
 
         if (treasureHuntManager.CurrentTask.UnrevealedHints.Count != 0 && treasureHuntManager.CurrentTreasureHunt.HintPointsAvailable != 0)

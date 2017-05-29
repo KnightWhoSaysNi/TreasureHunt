@@ -11,6 +11,8 @@ public static class Constants
     public const string Extension = ".th";
     public const string TreasureHuntStartingHintPoints = "Starting hint points:";
     public const string ProblemRewardHintPoints = "Reward hint points:";
+    public const string RemainingHintPointsMessageSingular = " hint point remaining";
+    public const string RemainingHintPointsMessagePlural = " hint points remaining";
 
     public const string TaskSolvedByText = "Correct !";
     public const string TaskSolvedByLocation = "You've reached the target destination ! Congratulations !";
@@ -23,7 +25,8 @@ public static class Constants
 
     public const int DefaultLocationRadius = 100;
 
-    public const string StartingLocationServiceMessage = "Starting location service...";
+    public const string NoLocationSolution = "Task has no set location.";
+    public const string StartingLocationService = "Starting location service...";
     public const string LocationServiceNotStarted = "Location service couldn't start.";
     public const string LocationServiceDisabledByUser = "Please enable Location.";
 
@@ -32,5 +35,7 @@ public static class Constants
     public const float LocationServiceUpdateTimeInSeconds = 1;
     public const float DesiredAccuracyInMeters = 1;
     public const float UpdateDistanceInMeters = 1;
+
+    public const string EmptyPassword = "Password cannot be empty";    
 }
 
