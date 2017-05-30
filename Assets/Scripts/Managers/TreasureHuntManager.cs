@@ -27,6 +27,9 @@ public class TreasureHuntManager : MonoBehaviour
     public event Action TaskCreated;
     public event Action HintCreated;
     public event Action HintRemoved;
+    public event Action HintRevealed;
+
+    public event Action TaskSolved;
 
     #endregion
 
@@ -193,14 +196,36 @@ public class TreasureHuntManager : MonoBehaviour
         return false;
     }
 
-    public bool IsSolutionCorrect(string textSolution)
+    public void CheckTextSolution(string possibleSolution)
     {
-        if (CurrentTask.Solution.TextSolution.Trim().ToLower() == textSolution.Trim().ToLower())
+        if (CurrentTask.Solution.TextSolution.Trim().ToLower() == possibleSolution.Trim().ToLower())
         {
-            return true;
-        }
+            CurrentTask.IsSolved = true;
+            SaveTreasureHunt();
 
-        return false;
+            if (TaskSolved != null)
+            {
+                TaskSolved();
+            }
+        }
+    }
+
+    // This MUST be called before HintOptions.RevealHint in order to work correctly
+    public void RevealHint()
+    {
+        // This will only be called if there are some Unrevealed hints and there are Hint points available
+        Hint hint = CurrentTask.UnrevealedHints[0];
+        CurrentTask.UnrevealedHints.RemoveAt(0);
+        CurrentTask.RevealedHints.Add(hint);
+        CurrentHint = hint;
+        CurrentTreasureHunt.UsedHintPoints++;
+
+        SaveTreasureHunt();
+
+        if (HintRevealed != null)
+        {
+            HintRevealed();
+        }
     }
 
     #endregion

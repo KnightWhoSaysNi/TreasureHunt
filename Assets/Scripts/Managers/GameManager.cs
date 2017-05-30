@@ -144,6 +144,11 @@ public class GameManager : MonoBehaviour
 
     #region - Main Menu -
 
+    public void ShowSaveFolderLocation()
+    {
+        saveLocation.text = Constants.persistentDataPath;
+    }
+
     public void Quit()
     {
         Application.Quit();
@@ -159,6 +164,7 @@ public class GameManager : MonoBehaviour
                 ClosePasswordPanel();
             }
 
+            // Task is opened
             if (gameMenuStack.Peek().MenuItemType == MenuItemType.Task)
             {
                 // As the last item on the stack is a Task, Task panel is currently active
@@ -167,8 +173,8 @@ public class GameManager : MonoBehaviour
                 if (GameMode == GameMode.CreationMode && !CanTaskBeSaved(false))
                 {
                     messagePanel.SetActive(true);
-                    messageText.text = "Your task is not yet saved. If you go back it will be deleted. Are you sure you want to go back?";
-                    saveReminderButtons.SetActive(true);
+                    messageText.text = Constants.TaskNotSavedGoingBack;
+                    saveReminderButtons.SetActive(true);                    
 
                     // Stopping the 'Back' process until the player decides what to do
                     return;                    
@@ -465,15 +471,11 @@ public class GameManager : MonoBehaviour
     {
         string possibleTextSolution = answerInputField.text;
 
-        bool isAnswerCorrect = treasureHuntManager.IsSolutionCorrect(possibleTextSolution);
-
-        if (isAnswerCorrect)
+        treasureHuntManager.CheckTextSolution(possibleTextSolution);
+                
+        if (treasureHuntManager.CurrentTask.IsSolved == false)
         {
-            OnSolvedTask();   
-        }
-        else
-        {
-            // Wrong answer            
+            // Wrong answer was given, Task is not solved            
             StartCoroutine(ChangeInputFieldColor(answerInputField,Color.red));            
         }
     }   
@@ -527,7 +529,8 @@ public class GameManager : MonoBehaviour
         {
             hintInputField.text = treasureHuntManager.CurrentHint.Text;
         }
-        answerInputField.text = treasureHuntManager.CurrentTask.Solution.TextSolution; // TODO incorporate location into solution
+
+        answerInputField.text = treasureHuntManager.CurrentTask.Solution.TextSolution;        
     }
 
     private IEnumerator DisplayCorrectAnswerPanel(float seconds, bool isLocationReached = false)
@@ -670,7 +673,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void OnSolvedTask(bool isLocationReached = false)
+    private void OnTaskSolved(bool isLocationReached = false)
     {
         treasureHuntManager.CurrentTask.IsSolved = true;
         StartCoroutine(ChangeInputFieldColor(answerInputField, Color.green));
@@ -690,19 +693,19 @@ public class GameManager : MonoBehaviour
 
         if (taskInputField.text == string.Empty)
         {
-            saveMessage = "You cannot save an empty task. Please write some clue or delete the task.";
+            saveMessage = Constants.EmptyTaskClueSave;
             canTaskBeSaved = false;
         }
         else if (answerInputField.text == string.Empty)
         {
             messagePanel.SetActive(true);
-            saveMessage = "You cannot save a task without an answer.";
+            saveMessage = Constants.EmptyAnswerSave;
             canTaskBeSaved = false;
         }
         else if (treasureHuntManager.CurrentHint != null && !CanHintBeSaved(false))
         {
             // Hint InputField is empty
-            saveMessage = "You cannot save an empty hint. Please either add some text or remove the hint.";
+            saveMessage = Constants.EmptyHintSave;
             canTaskBeSaved = false;
         }
 
@@ -719,21 +722,6 @@ public class GameManager : MonoBehaviour
 
     #region - Hint related methods -
 
-    public void RevealHint()
-    {
-        // This can only be called if there are some Unrevealed hints and there are Hint points available
-        Hint hint = treasureHuntManager.CurrentTask.UnrevealedHints[0];
-        treasureHuntManager.CurrentTask.UnrevealedHints.RemoveAt(0);
-        treasureHuntManager.CurrentTask.RevealedHints.Add(hint);
-        treasureHuntManager.CurrentHint = hint;
-        treasureHuntManager.CurrentTreasureHunt.UsedHintPoints++;
-
-        hintPanel.gameObject.SetActive(true);
-        hintText.text = hint.Text;
-
-        RefreshHintNavigation();
-    }
-
     public void ShowPreviousHint()
     {
         if (GameMode == GameMode.PlayMode)
@@ -746,6 +734,8 @@ public class GameManager : MonoBehaviour
             {
                 // Current Hint is empty, but hintInputField.text is not
                 SaveHint();
+                // Since the hint is saved without using the Save button, AddHint button needs to be interactable again
+                addHint.interactable = true;
             }
             ShowHint(-1);
         }
@@ -763,6 +753,8 @@ public class GameManager : MonoBehaviour
             {
                 // Current Hint is empty, but hintInputField.text is not
                 SaveHint();
+                // Since the hint is saved without using the Save button, AddHint button needs to be interactable again
+                addHint.interactable = true;
             }
             ShowHint(1);
         }
@@ -799,7 +791,7 @@ public class GameManager : MonoBehaviour
             if (isReminderNeeded)
             {
                 messagePanel.SetActive(true);
-                messageText.text = "Current hint is empty. Please either add some text or remove the hint.";
+                messageText.text = Constants.EmptyHintSave;
             }
         }
 
@@ -928,7 +920,7 @@ public class GameManager : MonoBehaviour
                 if (treasureHuntManager.ContainsTreasureHuntTitle(newTitle))
                 {
                     messagePanel.SetActive(true);
-                    messageText.text = "A treasure hunt with the same name already exists.";
+                    messageText.text = Constants.SameNameTreasureHunt;
                     SetHeader(oldTitle, MenuItemType.Problem);
                     return;
                 }
@@ -996,15 +988,18 @@ public class GameManager : MonoBehaviour
     {
         if (GameMode == GameMode.CreationMode && treasureHuntManager.CurrentTask.Solution.HasLocationSolution)
         {
-            latitude.text = treasureHuntManager.CurrentTask.Solution.LocationSolution.Latitude.ToString();
-            longitude.text = treasureHuntManager.CurrentTask.Solution.LocationSolution.Longitude.ToString();
-            radiusSlider.value = treasureHuntManager.CurrentTask.Solution.LocationSolution.Radius;
+            ShowSolvedLocationOptions();
         }
         else // Play mode
         {
-            if (!treasureHuntManager.CurrentTask.IsSolved)
+            if (treasureHuntManager.CurrentTask.IsSolved)
             {
-                IgnoreLocation();                
+                ShowSolvedLocationOptions();                
+            }
+            else
+            {
+                // Task is not solved so reset location options
+                IgnoreLocation();
             }
         }
     }
@@ -1020,9 +1015,26 @@ public class GameManager : MonoBehaviour
 
     private void ResetPlayModeAdvancedOptions()
     {
-        checkCoordinates.interactable = true;
-        checkPosition.interactable = true;
+        if (treasureHuntManager.CurrentTask.IsSolved)
+        {
+            // Task is solved, buttons cannot be used
+            checkCoordinates.interactable = false;
+            checkPosition.interactable = false;            
+        }
+        else
+        {
+            // Task is not solved, buttons can be used
+            checkCoordinates.interactable = true;
+            checkPosition.interactable = true;
+        }
         stopPositionCheck.interactable = false;
+    }
+
+    private void ShowSolvedLocationOptions()
+    {
+        latitude.text = treasureHuntManager.CurrentTask.Solution.LocationSolution.Latitude.ToString();
+        longitude.text = treasureHuntManager.CurrentTask.Solution.LocationSolution.Longitude.ToString();
+        radiusSlider.value = treasureHuntManager.CurrentTask.Solution.LocationSolution.Radius;
     }
 
     #endregion
@@ -1182,11 +1194,7 @@ public class GameManager : MonoBehaviour
                 break;
         }
     }
-
-    public void ShowSaveFolderLocation()
-    {
-        saveLocation.text = Constants.persistentDataPath;
-    }
+   
 
     #endregion
 
@@ -1205,8 +1213,7 @@ public class GameManager : MonoBehaviour
 
         treasureHuntManager.TreasureHuntsLoaded += TreasureHuntsLoaded;
         treasureHuntManager.TreasureHuntSaveStarted += TreasureHuntSaveStarted;
-        treasureHuntManager.TreasureHuntSaved += TreasureHuntSaved;
-        
+        treasureHuntManager.TreasureHuntSaved += TreasureHuntSaved;        
 
         treasureHuntManager.TreasureHuntCreated += OnTreasureHuntCreated;
         treasureHuntManager.ProblemCreated += OnProblemCreated;
@@ -1214,6 +1221,9 @@ public class GameManager : MonoBehaviour
         treasureHuntManager.HintCreated += OnHintCreated;
 
         treasureHuntManager.HintRemoved += OnHintRemoved;
+        treasureHuntManager.HintRevealed += OnHintRevealed;
+
+        treasureHuntManager.TaskSolved += () => OnTaskSolved();
 
         // Location Manager event subscription
         locationManager.StartingLocationService += LocationManager_StartingLocationService;
@@ -1288,6 +1298,14 @@ public class GameManager : MonoBehaviour
         // Advanced answer
         advancedPlayOptions.SetActive(isInPlayMode);
         advancedCreationOptions.SetActive(!isInPlayMode);
+    }
+
+    private void OnHintRevealed()
+    {
+        hintPanel.gameObject.SetActive(true);
+        hintText.text = treasureHuntManager.CurrentHint.Text;
+
+        RefreshHintNavigation();
     }
 
     #region - OnCreated Handlers -
@@ -1377,9 +1395,8 @@ public class GameManager : MonoBehaviour
 
     private void LocationManager_TargetLocationReached()
     {
-        // Target location radius reached, Task is solved        
-        //advancedOptionsPanel.SetActive(false);
-        OnSolvedTask();
+        // Target location radius reached, Task is solved                
+        OnTaskSolved(true);
     }
 
     private void LocationManager_LocationServiceStarted()

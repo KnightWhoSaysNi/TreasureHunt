@@ -7154,7 +7154,7 @@ MonoBehaviour:
   m_FillRect: {fileID: 845595011}
   m_HandleRect: {fileID: 2065377423}
   m_Direction: 0
-  m_MinValue: 10
+  m_MinValue: 20
   m_MaxValue: 200
   m_WholeNumbers: 1
   m_Value: 100
@@ -11365,7 +11365,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Add answer alternatives. Not implemented yet
+  m_Text: Multiple answers. Not implemented yet
 --- !u!222 &1116360351
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -16145,7 +16145,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1529416078}
+      - m_Target: {fileID: 1529416080}
         m_MethodName: RevealHint
         m_Mode: 1
         m_Arguments:

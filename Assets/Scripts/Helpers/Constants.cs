@@ -14,6 +14,11 @@ public static class Constants
     public const string RemainingHintPointsMessageSingular = " hint point remaining";
     public const string RemainingHintPointsMessagePlural = " hint points remaining";
 
+    public const string TaskNotSavedGoingBack = "Your task is not yet saved. If you go back it will be deleted. Are you sure you want to go back?";
+    public const string SameNameTreasureHunt = "A treasure hunt with the same name already exists.";
+    public const string EmptyTaskClueSave = "You cannot save an empty task. Please write some clue or delete the task.";
+    public const string EmptyAnswerSave = "You cannot save a task without an answer.";
+    public const string EmptyHintSave = "You cannot save an empty hint. Please either add some text or remove the hint.";
     public const string TaskSolvedByText = "Correct !";
     public const string TaskSolvedByLocation = "You've reached the target destination ! Congratulations !";
 
