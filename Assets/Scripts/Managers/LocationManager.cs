@@ -7,6 +7,9 @@ using UnityEngine.UI;
 public class LocationManager : MonoBehaviour
 {
     private Location targetLocation;
+    private bool shouldUseCurrentLocation;
+    private float runTime;
+    private float updateTime;
 
     public InputField latitudeInput;
     public InputField longitudeInput;
@@ -24,9 +27,17 @@ public class LocationManager : MonoBehaviour
         Input.location.Stop();       
     }
 
-    public void UseCurrentLocation(bool useCurrentLocation)
+    public void UseCurrentLocation(bool shouldUseCurrentLocation)
     {
-        StartCoroutine(SetCurrentLocation(useCurrentLocation));
+        this.shouldUseCurrentLocation = shouldUseCurrentLocation;
+        if (shouldUseCurrentLocation)
+        {
+            StartCoroutine(SetCurrentLocation());
+        }
+        else
+        {
+            StopCoroutine(SetCurrentLocation());
+        }
     }
 
     public bool AreCoordinatesInTargetRadius(Location targetLocation)
@@ -49,6 +60,12 @@ public class LocationManager : MonoBehaviour
         StartCoroutine(CheckPosition());
     }
 
+    private void Start()
+    {
+        runTime = Constants.LocationServiceRunTimeInSeconds;
+        updateTime = Constants.LocationServiceUpdateTimeInSeconds;
+    }
+
     private IEnumerator CheckPosition()
     {
         // If it's not running already start the service now
@@ -57,14 +74,13 @@ public class LocationManager : MonoBehaviour
             yield return StartCoroutine(StartLocationService()); // If this didn't start the location service an appropriate event was raised
         }
         MonoBehaviour.print("Check position status: " + Input.location.status);
-                
-        float runTime = Constants.LocationServiceRunTimeInSeconds;
-        float updateTime = Constants.LocationServiceUpdateTimeInSeconds;
+
+        float distanceToTarget;
 
         // If location service is not stopped manually it will run for 5minutes
         while (Input.location.status == LocationServiceStatus.Running && runTime > 0)
         {
-            float distanceToTarget = GetDistance(Input.location.lastData.latitude, Input.location.lastData.longitude,
+            distanceToTarget = GetDistance(Input.location.lastData.latitude, Input.location.lastData.longitude,
                 targetLocation.Latitude, targetLocation.Longitude);
             
             // If target is reached location service will stop, if not this while loop will continue
@@ -75,7 +91,7 @@ public class LocationManager : MonoBehaviour
         }
     }
 
-    private IEnumerator SetCurrentLocation(bool useCurrentLocation)
+    private IEnumerator SetCurrentLocation()
     {
         // If it's not running already start the service now
         if (Input.location.status != LocationServiceStatus.Running)
@@ -85,10 +101,9 @@ public class LocationManager : MonoBehaviour
         }
         MonoBehaviour.print("Use current location status: " + Input.location.status);
 
-        float updateTime = Constants.LocationServiceUpdateTimeInSeconds;
-                
-        while (useCurrentLocation && Input.location.status == LocationServiceStatus.Running)
+        while (shouldUseCurrentLocation && Input.location.status == LocationServiceStatus.Running)
         {
+            MonoBehaviour.print("Using current location");
             latitudeInput.text = Input.location.lastData.latitude.ToString();
             longitudeInput.text = Input.location.lastData.longitude.ToString();
 

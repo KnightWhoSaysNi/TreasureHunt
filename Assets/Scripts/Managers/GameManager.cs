@@ -1041,9 +1041,9 @@ public class GameManager : MonoBehaviour
 
     #region - Location related methods - 
 
-    public void UseCurrentLocation(bool useCurrentLocation)
+    public void UseCurrentLocation(bool shouldUseCurrentLocation)
     {
-        locationManager.UseCurrentLocation(useCurrentLocation);
+        locationManager.UseCurrentLocation(shouldUseCurrentLocation);
     }
 
     public void IgnoreLocation()
@@ -1091,8 +1091,12 @@ public class GameManager : MonoBehaviour
             checkPosition.interactable = true;
             return;
         }
+        else
+        {
+            // Task has Location as a Solution
+            locationManager.CheckPosition(treasureHuntManager.CurrentTask.Solution.LocationSolution);
+        }
 
-        locationManager.CheckPosition(treasureHuntManager.CurrentTask.Solution.LocationSolution);
     }
 
     private void ReportNoLocationSolution()
