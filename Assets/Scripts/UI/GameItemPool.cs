@@ -4,34 +4,34 @@ using UnityEngine;
 using UnityEngine.UI;
 
 
-public class MenuItemPool : MonoBehaviour
+public class GameItemPool : MonoBehaviour
 {
     private int currentItemCount;
-    private List<MenuItem> inactiveMenuItems;
-    private List<MenuItem> activeMenuItems;
+    private List<GameItem> inactiveGameItems;
+    private List<GameItem> activeGameItems;
 
     public int poolStartingCount = 10; // TODO perhaps put this in constants
-    public MenuItem menuItemPrefab;
+    public GameItem gameItemPrefab;
 
     public GameObject addTreasureHunt;
     public GameObject addProblem;
     public GameObject addTask;
 
-    public static MenuItemPool Instance { get; private set; }  
+    public static GameItemPool Instance { get; private set; }  
 
-    public MenuItem GetMenuItem(Transform parent)
+    public GameItem GetGameItem(Transform parent)
     {
-        if (inactiveMenuItems.Count == 0)
+        if (inactiveGameItems.Count == 0)
         {
             ExpandPool();
         }
 
-        MenuItem menuItem = inactiveMenuItems[0];
-        inactiveMenuItems.RemoveAt(0);
-        ActivateItem(menuItem.gameObject, parent);
-        activeMenuItems.Add(menuItem);
+        GameItem gameItem = inactiveGameItems[0];
+        inactiveGameItems.RemoveAt(0);
+        ActivateItem(gameItem.gameObject, parent);
+        activeGameItems.Add(gameItem);
 
-        return menuItem;
+        return gameItem;
     }
 
     #region  - Addition GameObjects -
@@ -53,12 +53,12 @@ public class MenuItemPool : MonoBehaviour
 
     #endregion
 
-    public void ReclaimMenuItems()
+    public void ReclaimGameItems()
     {
-        while (activeMenuItems.Count > 0)
+        while (activeGameItems.Count > 0)
         {
-            MenuItem menuItem = activeMenuItems[0];
-            ReclaimMenuItem(menuItem, 0);
+            GameItem gameItem = activeGameItems[0];
+            ReclaimGameItem(gameItem, 0);
         }
 
         if (!addTreasureHunt.transform.IsChildOf(this.transform))
@@ -75,19 +75,19 @@ public class MenuItemPool : MonoBehaviour
         }
     }
 
-    public void ReclaimMenuItem(MenuItem menuItem, int index = -1)
+    public void ReclaimGameItem(GameItem gameItem, int index = -1)
     {
         if (index != -1)
         {
-            activeMenuItems.RemoveAt(index);
+            activeGameItems.RemoveAt(index);
         }
         else
         {
-            activeMenuItems.Remove(menuItem);
+            activeGameItems.Remove(gameItem);
         }
 
-        ResetMenuItem(menuItem);
-        inactiveMenuItems.Add(menuItem);
+        ResetGameItem(gameItem);
+        inactiveGameItems.Add(gameItem);
     }
 
     private void Awake()
@@ -101,11 +101,11 @@ public class MenuItemPool : MonoBehaviour
             Destroy(this);
         }
 
-        inactiveMenuItems = new List<MenuItem>();
-        activeMenuItems = new List<MenuItem>();
+        inactiveGameItems = new List<GameItem>();
+        activeGameItems = new List<GameItem>();
 
         currentItemCount = poolStartingCount;
-        InstantiateMenuItems(currentItemCount);
+        InstantiateGameItems(currentItemCount);
     }
 
     private void Start()
@@ -113,34 +113,34 @@ public class MenuItemPool : MonoBehaviour
         
     }
 
-    private void InstantiateMenuItems(int numberOfMenuItems)
+    private void InstantiateGameItems(int numberOfGameItems)
     {
-        for (int i = 0; i < numberOfMenuItems; i++)
+        for (int i = 0; i < numberOfGameItems; i++)
         {
-            MenuItem newMenuItem = Instantiate(menuItemPrefab);
-            ResetMenuItem(newMenuItem);
+            GameItem newGameItem = Instantiate(gameItemPrefab);
+            ResetGameItem(newGameItem);
 
-            inactiveMenuItems.Add(newMenuItem);
+            inactiveGameItems.Add(newGameItem);
         }        
     }
 
     private void ExpandPool()
     {
-        InstantiateMenuItems(currentItemCount);
+        InstantiateGameItems(currentItemCount);
         currentItemCount *= 2;
     }
 
-    private void ResetMenuItem(MenuItem menuItem)
+    private void ResetGameItem(GameItem gameItem)
     {
-        DeactivateItem(menuItem.gameObject);
+        DeactivateItem(gameItem.gameObject);
 
-        Button button = menuItem.GetComponent<Button>(); // TODO protect against null reference exceptions    
+        Button button = gameItem.GetComponent<Button>(); // TODO protect against null reference exceptions    
         button.interactable = true;    
         button.onClick.RemoveAllListeners();
 
-        menuItem.text.text = string.Empty;
-        menuItem.removeButton.SetActive(false);
-        menuItem.checkMark.SetActive(false);
+        gameItem.text.text = string.Empty;
+        gameItem.removeButton.SetActive(false);
+        gameItem.checkMark.SetActive(false);
     }
 
     private void ActivateItem(GameObject item, Transform parent)

@@ -165,14 +165,14 @@ public class GameManager : MonoBehaviour
             }
 
             // Task is opened
-            if (gameMenuStack.Peek().MenuItemType == MenuItemType.Task)
+            if (gameMenuStack.Peek().GameItemType == GameItemType.Task)
             {
                 // As the last item on the stack is a Task, Task panel is currently active
 
                 // In CreationMode: A check to see if Task, Answer or Hint input fields are empty
                 if (GameMode == GameMode.CreationMode && !CanTaskBeSaved(false))
                 {
-                    messagePanel.SetActive(true);
+                    messagePanel.SetActive(true); // TODO put this and the next line in a separate method
                     messageText.text = Constants.TaskNotSavedGoingBack;
                     saveReminderButtons.SetActive(true);                    
 
@@ -189,7 +189,7 @@ public class GameManager : MonoBehaviour
             }
 
             GameMenuTuple previousGameMenu = gameMenuStack.Pop();
-            UpdateGameMenu(previousGameMenu.Title, previousGameMenu.ListOfItems, previousGameMenu.MenuItemType);
+            UpdateGameMenu(previousGameMenu.Title, previousGameMenu.ListOfItems, previousGameMenu.GameItemType);
         }
         else
         {
@@ -223,7 +223,7 @@ public class GameManager : MonoBehaviour
         answerPanel.gameObject.SetActive(false);
 
         GameMenuTuple previousGameMenu = gameMenuStack.Pop();
-        UpdateGameMenu(previousGameMenu.Title, previousGameMenu.ListOfItems, previousGameMenu.MenuItemType);
+        UpdateGameMenu(previousGameMenu.Title, previousGameMenu.ListOfItems, previousGameMenu.GameItemType);
     }
 
     #endregion
@@ -261,48 +261,48 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void UpdateGameMenu(string header, IEnumerable listOfItems, MenuItemType menuItemType = MenuItemType.TreasureHunt)
+    private void UpdateGameMenu(string header, IEnumerable listOfItems, GameItemType gameItemType = GameItemType.TreasureHunt)
     {
-        SetHeader(header, menuItemType);
-        MenuItemPool.Instance.ReclaimMenuItems();
+        SetHeader(header, gameItemType);
+        GameItemPool.Instance.ReclaimGameItems();
 
         bool isProblemInteractable = true;
 
         foreach (var item in listOfItems)
         {
-            MenuItem menuItem = MenuItemPool.Instance.GetMenuItem(gameMenu);
-            menuItem.MenuItemType = menuItemType;
+            GameItem gameItem = GameItemPool.Instance.GetGameItem(gameMenu);
+            gameItem.GameItemType = gameItemType;
 
             string title = ((ITitle)item).Title;
-            menuItem.text.text = title;
+            gameItem.text.text = title;
 
             if (GameMode == GameMode.CreationMode)
             {
-                menuItem.removeButton.SetActive(true);
+                gameItem.removeButton.SetActive(true);
             }
 
-            Button button = menuItem.GetComponent<Button>();
+            Button button = gameItem.GetComponent<Button>();
             // GameMenuTuple add to the stack
             button.onClick.AddListener(() =>
             {
                 GameMenuTuple stackItem = new GameMenuTuple();
                 //stackItem.Title = header;
                 stackItem.ListOfItems = listOfItems;
-                stackItem.MenuItemType = menuItemType;
+                stackItem.GameItemType = gameItemType;
                 gameMenuStack.Push(stackItem);
             });
 
-            switch (menuItemType) // TODO Create separate methods for all cases
+            switch (gameItemType) // TODO Create separate methods for all cases
             {
-                case MenuItemType.TreasureHunt:                    
-                    menuItem.TreasureHunt = (TreasureHunt.TreasureHunt)item;
+                case GameItemType.TreasureHunt:                    
+                    gameItem.TreasureHunt = (TreasureHunt.TreasureHunt)item;
                     button.onClick.AddListener(() =>
                     {
                         if (GameMode == GameMode.CreationMode && !IsPasswordEntered)
                         {
                             // Password not entered
                             passwordPanel.SetActive(true);
-                            if (menuItem.TreasureHunt.Password == null)
+                            if (gameItem.TreasureHunt.Password == null)
                             {
                                 // Setting up password for the first time
                                 passwordFirstSave.SetActive(true);
@@ -318,29 +318,29 @@ public class GameManager : MonoBehaviour
 
                         gameMenuStack.Peek().Title = header;
 
-                        UpdateGameMenu(title, menuItem.TreasureHunt.Problems, MenuItemType.Problem);
-                        treasureHuntManager.CurrentTreasureHunt = menuItem.TreasureHunt;
+                        UpdateGameMenu(title, gameItem.TreasureHunt.Problems, GameItemType.Problem);
+                        treasureHuntManager.CurrentTreasureHunt = gameItem.TreasureHunt;
 
                         hintPoints.text = treasureHuntManager.CurrentTreasureHunt.StartingHintPoints.ToString();
                     });
 
                     if (GameMode == GameMode.PlayMode)
                     {
-                        menuItem.checkMark.SetActive(menuItem.TreasureHunt.IsCompleted);
+                        gameItem.checkMark.SetActive(gameItem.TreasureHunt.IsCompleted);
                     }
                     break;
-                case MenuItemType.Problem:
-                    menuItem.Problem = (Problem)item;
+                case GameItemType.Problem:
+                    gameItem.Problem = (Problem)item;
 
                     if (GameMode == GameMode.PlayMode)
                     {
-                        menuItem.checkMark.SetActive(menuItem.Problem.IsSolved);
-                        menuItem.GetComponent<Button>().interactable = isProblemInteractable;
+                        gameItem.checkMark.SetActive(gameItem.Problem.IsSolved);
+                        gameItem.GetComponent<Button>().interactable = isProblemInteractable;
                     }
 
-                    isProblemInteractable = menuItem.Problem.IsSolved;
+                    isProblemInteractable = gameItem.Problem.IsSolved;
 
-                    if (menuItem.Problem.Tasks.Count == 1)
+                    if (gameItem.Problem.Tasks.Count == 1)
                     {
                         // TODO skip showing Tasks if the game is in Play Mode and just open the one Task
                         // If the game is in Creation Mode show Task and the Add Task button
@@ -349,26 +349,26 @@ public class GameManager : MonoBehaviour
                     {
                         gameMenuStack.Peek().Title = treasureHuntManager.CurrentTreasureHunt.Title;
 
-                        UpdateGameMenu(title, menuItem.Problem.Tasks, MenuItemType.Task);
-                        treasureHuntManager.CurrentProblem = menuItem.Problem;
+                        UpdateGameMenu(title, gameItem.Problem.Tasks, GameItemType.Task);
+                        treasureHuntManager.CurrentProblem = gameItem.Problem;
 
                         hintPoints.text = treasureHuntManager.CurrentProblem.HintPoints.ToString();
                     });
                     break;
-                case MenuItemType.Task:
-                    menuItem.Task = (Task)item;
+                case GameItemType.Task:
+                    gameItem.Task = (Task)item;
                     // TODO Add button listener which shows the Task panel with the appropriate Task
                     button.onClick.AddListener(() =>
                     {
                         gameMenuStack.Peek().Title = treasureHuntManager.CurrentProblem.Title;
 
-                        treasureHuntManager.CurrentTask = menuItem.Task;                  
+                        treasureHuntManager.CurrentTask = gameItem.Task;                  
                         ActivateTask();
                     });
 
-                    if (GameMode == GameMode.PlayMode && menuItem.Task.IsSolved)
+                    if (GameMode == GameMode.PlayMode && gameItem.Task.IsSolved)
                     {
-                        menuItem.checkMark.SetActive(true);
+                        gameItem.checkMark.SetActive(true);
                     }
                     break;
                 default:
@@ -379,16 +379,16 @@ public class GameManager : MonoBehaviour
         if (GameMode == GameMode.CreationMode)
         {
             // Adding an Add button for TreasureHunt/Problem/Task
-            switch (menuItemType)
+            switch (gameItemType)
             {
-                case MenuItemType.TreasureHunt:
+                case GameItemType.TreasureHunt:
                     // Showing a list of Treasure Hunts
                     hintPointsPanel.SetActive(false); // in case the previous game menu was a TreasureHunt
                     IsPasswordEntered = false;
 
-                    MenuItemPool.Instance.GetAddTreasureHunt(gameMenu);
+                    GameItemPool.Instance.GetAddTreasureHunt(gameMenu);
                     break;
-                case MenuItemType.Problem:
+                case GameItemType.Problem:
                     hintPointsPanel.SetActive(true);
                     hintPointsText.text = Constants.TreasureHuntStartingHintPoints;
 
@@ -398,9 +398,9 @@ public class GameManager : MonoBehaviour
                         hintPoints.text = treasureHuntManager.CurrentTreasureHunt.StartingHintPoints.ToString();
                     }
 
-                    MenuItemPool.Instance.GetAddProblem(gameMenu);
+                    GameItemPool.Instance.GetAddProblem(gameMenu);
                     break;
-                case MenuItemType.Task:
+                case GameItemType.Task:
                     hintPointsPanel.SetActive(true);
                     hintPointsText.text = Constants.ProblemRewardHintPoints;
 
@@ -410,7 +410,7 @@ public class GameManager : MonoBehaviour
                         hintPoints.text = treasureHuntManager.CurrentProblem.HintPoints.ToString();
                     }
 
-                    MenuItemPool.Instance.GetAddTask(gameMenu);
+                    GameItemPool.Instance.GetAddTask(gameMenu);
                     break;
                 default:
                     break;
@@ -420,7 +420,7 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator WaitForPersistenceServiceLoaded()
     {
-        SetHeader("Unnamed Treasure Hunt", MenuItemType.Problem);
+        SetHeader("Unnamed Treasure Hunt", GameItemType.Problem);
         workingSpinnerPanel.SetActive(true);
         workingSpinnerText.text = Constants.LoadingMessage;
         while (treasureHuntManager.AllTreasureHunts == null)
@@ -588,7 +588,7 @@ public class GameManager : MonoBehaviour
         // In creation mode this was active so it needs to be set to false
         hintPointsPanel.SetActive(false); 
 
-        SetHeader(treasureHuntManager.CurrentTask.Title, MenuItemType.Task);
+        SetHeader(treasureHuntManager.CurrentTask.Title, GameItemType.Task);
 
         // Show Task and Answer panels and hide Game Menu
         gameMenu.gameObject.SetActive(false);
@@ -887,12 +887,12 @@ public class GameManager : MonoBehaviour
             points = Mathf.Clamp(points, Constants.MinHintPoints, Constants.MaxHintPoints);
             hintPoints.text = points.ToString();
 
-            MenuItemType menuItemType = gameMenuStack.Peek().MenuItemType;
-            if (menuItemType == MenuItemType.TreasureHunt)
+            GameItemType gameItemType = gameMenuStack.Peek().GameItemType;
+            if (gameItemType == GameItemType.TreasureHunt)
             {
                 treasureHuntManager.ChangeTreasureHuntHintPoints(points);
             }
-            else if(menuItemType == MenuItemType.Problem)
+            else if(gameItemType == GameItemType.Problem)
             {
                 treasureHuntManager.ChangeProblemHintPoints(points);
             }
@@ -911,32 +911,32 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        MenuItemType currentMenuItemType = gameMenuStack.Peek().MenuItemType;
+        GameItemType currentGameItemType = gameMenuStack.Peek().GameItemType;
         string oldTitle = treasureHuntManager.CurrentTreasureHunt.Title;
 
-        switch (currentMenuItemType)
+        switch (currentGameItemType)
         {
-            case MenuItemType.TreasureHunt:
+            case GameItemType.TreasureHunt:
                 if (treasureHuntManager.ContainsTreasureHuntTitle(newTitle))
                 {
                     messagePanel.SetActive(true);
                     messageText.text = Constants.SameNameTreasureHunt;
-                    SetHeader(oldTitle, MenuItemType.Problem);
+                    SetHeader(oldTitle, GameItemType.Problem);
                     return;
                 }
                 treasureHuntManager.CurrentTreasureHunt.ChangeTitle(newTitle);
                 break;
-            case MenuItemType.Problem:
+            case GameItemType.Problem:
                 treasureHuntManager.CurrentProblem.ChangeTitle(newTitle);
                 break;
-            case MenuItemType.Task:
+            case GameItemType.Task:
                 treasureHuntManager.CurrentTask.ChangeTitle(newTitle);
                 break;            
             default:                
                 break;
         }
 
-        if (currentMenuItemType == MenuItemType.TreasureHunt && (newTitle != oldTitle))
+        if (currentGameItemType == GameItemType.TreasureHunt && (newTitle != oldTitle))
         {
             // Treasure Hunt's title is changed and it's different than the old one
             treasureHuntManager.SaveTreasureHunt(oldTitle);
@@ -947,13 +947,13 @@ public class GameManager : MonoBehaviour
         }        
     }
 
-    private void SetHeader(string header, MenuItemType menuItemType = MenuItemType.TreasureHunt)
+    private void SetHeader(string header, GameItemType gameItemType = GameItemType.TreasureHunt)
     {
         if (GameMode == GameMode.PlayMode)
         {
             ActivateHeaderObjects(true);
         }
-        else if (menuItemType == MenuItemType.TreasureHunt)
+        else if (gameItemType == GameItemType.TreasureHunt)
         {
             // Game is in CreationMode but currently a list of all TreasureHunts 
             // is displayed so header cannot be edited
@@ -1175,20 +1175,20 @@ public class GameManager : MonoBehaviour
 
     #endregion
 
-    public void RemoveMenuItem(MenuItem menuItem)
+    public void RemoveGameItem(GameItem gameItem)
     {
-        MenuItemPool.Instance.ReclaimMenuItem(menuItem);
+        GameItemPool.Instance.ReclaimGameItem(gameItem);
 
-        switch (menuItem.MenuItemType)
+        switch (gameItem.GameItemType)
         {
-            case MenuItemType.TreasureHunt:
-                treasureHuntManager.RemoveTreasureHunt(menuItem.TreasureHunt);
+            case GameItemType.TreasureHunt:
+                treasureHuntManager.RemoveTreasureHunt(gameItem.TreasureHunt);
                 break;
-            case MenuItemType.Problem:
-                treasureHuntManager.RemoveProblem(menuItem.Problem);
+            case GameItemType.Problem:
+                treasureHuntManager.RemoveProblem(gameItem.Problem);
                 break;
-            case MenuItemType.Task:
-                treasureHuntManager.RemoveTask(menuItem.Task);
+            case GameItemType.Task:
+                treasureHuntManager.RemoveTask(gameItem.Task);
                 break;
             default:
                 break;
@@ -1316,7 +1316,7 @@ public class GameManager : MonoBehaviour
         GameMenuTuple stackItem = new GameMenuTuple();
         stackItem.Title = "All Treasure Hunts";
         stackItem.ListOfItems = treasureHuntManager.AllTreasureHunts;
-        stackItem.MenuItemType = MenuItemType.TreasureHunt;
+        stackItem.GameItemType = GameItemType.TreasureHunt;
         gameMenuStack.Push(stackItem);
 
         // Setting up a new password for the newly created Treasure Hunt
@@ -1325,7 +1325,7 @@ public class GameManager : MonoBehaviour
         passwordFirstSave.SetActive(true);
         passwordAlreadySet.SetActive(false);
 
-        UpdateGameMenu(treasureHuntManager.CurrentTreasureHunt.Title, treasureHuntManager.CurrentTreasureHunt.Problems, MenuItemType.Problem);
+        UpdateGameMenu(treasureHuntManager.CurrentTreasureHunt.Title, treasureHuntManager.CurrentTreasureHunt.Problems, GameItemType.Problem);
     }
 
     private void OnProblemCreated()
@@ -1334,10 +1334,10 @@ public class GameManager : MonoBehaviour
         GameMenuTuple stackItem = new GameMenuTuple();
         stackItem.Title = treasureHuntManager.CurrentTreasureHunt.Title;
         stackItem.ListOfItems = treasureHuntManager.CurrentTreasureHunt.Problems;
-        stackItem.MenuItemType = MenuItemType.Problem;
+        stackItem.GameItemType = GameItemType.Problem;
         gameMenuStack.Push(stackItem);
 
-        UpdateGameMenu(treasureHuntManager.CurrentProblem.Title, treasureHuntManager.CurrentProblem.Tasks, MenuItemType.Task);        
+        UpdateGameMenu(treasureHuntManager.CurrentProblem.Title, treasureHuntManager.CurrentProblem.Tasks, GameItemType.Task);        
     }
 
     private void OnTaskCreated()
@@ -1346,7 +1346,7 @@ public class GameManager : MonoBehaviour
         GameMenuTuple stackItem = new GameMenuTuple();
         stackItem.Title = treasureHuntManager.CurrentProblem.Title;
         stackItem.ListOfItems = treasureHuntManager.CurrentProblem.Tasks;
-        stackItem.MenuItemType = MenuItemType.Task;
+        stackItem.GameItemType = GameItemType.Task;
         gameMenuStack.Push(stackItem);
 
         ActivateTask();
@@ -1435,6 +1435,6 @@ public class GameMenuTuple
 {
     public string Title { get; set; }
     public IEnumerable ListOfItems { get; set; }
-    public MenuItemType MenuItemType { get; set; }
+    public GameItemType GameItemType { get; set; }
 }
 
