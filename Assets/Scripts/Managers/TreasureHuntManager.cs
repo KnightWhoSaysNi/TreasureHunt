@@ -221,7 +221,7 @@ public class TreasureHuntManager : MonoBehaviour
         CurrentTreasureHunt.UsedHintPoints++;
 
         SaveTreasureHunt();
-
+        
         if (HintRevealed != null)
         {
             HintRevealed();

@@ -146,7 +146,7 @@ public class GameManager : MonoBehaviour
 
     public void ShowSaveFolderLocation()
     {
-        saveLocation.text = Constants.persistentDataPath;
+        saveLocation.text = Constants.persistentDataPath;        
     }
 
     public void Quit()
