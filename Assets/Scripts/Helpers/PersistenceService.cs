@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 
@@ -54,8 +55,7 @@ public sealed class PersistenceService
             }
         }
     }        
-
-    // TODO catch exceptions
+        
     public void SaveTreasureHunt(TreasureHunt.TreasureHunt treasureHunt, string oldTitle = null) // Main thread
     {
         this.oldTitle = oldTitle;
@@ -64,8 +64,7 @@ public sealed class PersistenceService
             saveWorker.RunWorkerAsync(treasureHunt);                     
         }
     }
-
-    // TODO catch exceptions
+        
     public void LoadTreasureHunts() // Main thread // TODO remove setting path as an argument
     {
         loadWorker.RunWorkerAsync();
@@ -78,7 +77,7 @@ public sealed class PersistenceService
             removeWorker.RunWorkerAsync(treasureHunt);
         }
     }
-    
+        
     private void SaveWorkerDoWork(object sender, DoWorkEventArgs e) // IS in fact on a separate thread
     {
         TreasureHunt.TreasureHunt treasureHunt = e.Argument as TreasureHunt.TreasureHunt;
@@ -96,20 +95,58 @@ public sealed class PersistenceService
         if (oldTitle != null && File.Exists(oldFilePath))
         {
             // Treasure Hunt was renamed and saved as a new file so the old one is deleted
-            File.Delete(oldFilePath);
+            try
+            {
+                File.Delete(oldFilePath);
+            }
+            catch (UnauthorizedAccessException exc)
+            {
+                MonoBehaviour.print(exc.Message); // TODO actually let the player know of the problem
+            }
+            catch (IOException exc)
+            {
+                MonoBehaviour.print(exc.Message); // TODO actually let the player know of the problem
+            }
+            catch(Exception exc)
+            {
+                MonoBehaviour.print(exc.Message); // TODO actually let the player know of the problem
+            }
+            
 
             // Necessary for the next method call
             oldTitle = null;
         }
     }
-
-    // Catch exceptions
+        
     private void SaveFile(TreasureHunt.TreasureHunt treasureHunt, string filePath)
     {
-        using (Stream stream = File.Open(filePath, FileMode.Create, FileAccess.Write))
+        try
         {
-            BinaryFormatter binFormatter = new BinaryFormatter();
-            binFormatter.Serialize(stream, treasureHunt);
+            using (Stream stream = File.Open(filePath, FileMode.Create, FileAccess.Write))
+            {
+                BinaryFormatter binFormatter = new BinaryFormatter();
+                binFormatter.Serialize(stream, treasureHunt);
+            }
+        }
+        catch(ArgumentException e)
+        {
+            MonoBehaviour.print(e.Message); // TODO actually let the player know of the problem
+        }
+        catch (IOException e)
+        {
+            MonoBehaviour.print(e.Message); // TODO actually let the player know of the problem
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            MonoBehaviour.print(e.Message); // TODO actually let the player know of the problem
+        }
+        catch(SerializationException e)
+        {
+            MonoBehaviour.print(e.Message); // TODO actually let the player know of the problem
+        }
+        catch(Exception e)
+        {
+            MonoBehaviour.print(e.Message); // TODO actually let the player know of the problem
         }
     }
 
@@ -134,7 +171,6 @@ public sealed class PersistenceService
         }
     }
 
-    // TODO catch exceptions
     private void LoadWorkerDoWork(object sender, DoWorkEventArgs e) // Not on the main thread
     {
         List<TreasureHunt.TreasureHunt> treasureHunts = new List<TreasureHunt.TreasureHunt>();
@@ -160,12 +196,27 @@ public sealed class PersistenceService
 
             e.Result = treasureHunts;
         }
-        catch (Exception exc)
+        catch (ArgumentException exc)
         {
-
-            MonoBehaviour.print(exc.Message);
+            MonoBehaviour.print(exc.Message); // TODO actually let the player know of the problem
         }
-        
+        catch (IOException exc)
+        {
+            MonoBehaviour.print(exc.Message); // TODO actually let the player know of the problem
+        }
+        catch (UnauthorizedAccessException exc)
+        {
+            MonoBehaviour.print(exc.Message); // TODO actually let the player know of the problem
+        }
+        catch(SerializationException exc)
+        {
+            MonoBehaviour.print(exc.Message); // TODO actually let the player know of the problem
+        }
+        catch(Exception exc)
+        {
+            MonoBehaviour.print(exc.Message); // TODO actually let the player know of the problem
+        }
+
     }   
 
     private void OnLoadWorkerCompleted(object sender, RunWorkerCompletedEventArgs e) // Not on main thread, but not on the same thread as the worker
@@ -189,7 +240,6 @@ public sealed class PersistenceService
         }
     }
 
-    // TODO Catch exceptions
     private void RemoveWorkerDoWork(object sender, DoWorkEventArgs e)
     {
         TreasureHunt.TreasureHunt treasureHunt = e.Argument as TreasureHunt.TreasureHunt;
@@ -198,7 +248,22 @@ public sealed class PersistenceService
 
         if (File.Exists(filePath))
         {
-            File.Delete(filePath);
+            try
+            {
+                File.Delete(filePath);
+            }
+            catch (UnauthorizedAccessException exc)
+            {
+                MonoBehaviour.print(exc.Message); // TODO actually let the player know of the problem
+            }
+            catch (IOException exc)
+            {
+                MonoBehaviour.print(exc.Message); // TODO actually let the player know of the problem
+            }
+            catch (Exception exc)
+            {
+                MonoBehaviour.print(exc.Message); // TODO actually let the player know of the problem
+            }
         }
     }
 }

@@ -6,6 +6,9 @@ public class PasswordPanel : MonoBehaviour
 {
     public InputField[] passwordInputFields;    
 
+    /// <summary>
+    /// Clears all input fields in the password panel.
+    /// </summary>
     private void OnDisable()
     {
         foreach (InputField passwordInputField in passwordInputFields)

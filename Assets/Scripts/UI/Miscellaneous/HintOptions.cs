@@ -21,6 +21,10 @@ public class HintOptions : MonoBehaviour
         CheckHintOptions();
     }
 
+    /// <summary>
+    /// Displays remaining hint points in the appropriate Text game object and sets interactable property
+    /// of the reveal hint button.
+    /// </summary>
     private void CheckHintOptions()
     {
         string remainingHintPointsMessage = (treasureHuntManager.CurrentTreasureHunt.HintPointsAvailable == 1) ? 

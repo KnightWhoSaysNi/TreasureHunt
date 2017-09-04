@@ -12,8 +12,8 @@ public class GameManager : MonoBehaviour
 
     private TreasureHuntManager treasureHuntManager;
     private LocationManager locationManager;
-
-    private Transform currentMenu;
+        
+    private Transform currentMenu; // Transform of the currently active menu, like Main menu, Play a game, Options...
     private Stack<Transform> menuStack;
     private Stack<GameMenuTuple> gameMenuStack;
     
@@ -140,10 +140,14 @@ public class GameManager : MonoBehaviour
 
     #endregion
 
-    #region - Event Handlers and methods for UI elements -
+    #region - Event handlers and methods for UI elements -
 
     #region - Main Menu -
 
+    /// <summary>
+    /// Displays the location of the save folder. In case the player wants to play
+    /// a treasure hunt created by someone else he needs to put it in that specific folder.
+    /// </summary>
     public void ShowSaveFolderLocation()
     {
         saveLocation.text = Constants.persistentDataPath;        
@@ -151,56 +155,30 @@ public class GameManager : MonoBehaviour
 
     public void Quit()
     {
-        Application.Quit();
+        Application.Quit(); 
     }
 
+    /// <summary>
+    /// Goes back to the previous menu/game menu.
+    /// </summary>
     public void Back()
     {
         if (gameMenuStack.Count != 0)
         {
-            // In case password panel is active close it when using Back
-            if (passwordPanel.activeSelf)
-            {
-                ClosePasswordPanel();
-            }
-
-            // Task is opened
-            if (gameMenuStack.Peek().GameItemType == GameItemType.Task)
-            {
-                // As the last item on the stack is a Task, Task panel is currently active
-
-                // In CreationMode: A check to see if Task, Answer or Hint input fields are empty
-                if (GameMode == GameMode.CreationMode && !CanTaskBeSaved(false))
-                {
-                    messagePanel.SetActive(true); // TODO put this and the next line in a separate method
-                    messageText.text = Constants.TaskNotSavedGoingBack;
-                    saveReminderButtons.SetActive(true);                    
-
-                    // Stopping the 'Back' process until the player decides what to do
-                    return;                    
-                }
-
-                // In case the correct answer panel was still visible
-                taskSolvedPanel.SetActive(false);
-
-                gameMenu.gameObject.SetActive(true);
-                taskPanel.gameObject.SetActive(false);
-                answerPanel.gameObject.SetActive(false);
-            }
-
-            GameMenuTuple previousGameMenu = gameMenuStack.Pop();
-            UpdateGameMenu(previousGameMenu.Title, previousGameMenu.ListOfItems, previousGameMenu.GameItemType);
+            GoBackGameMenuStack();
         }
         else
         {
             // Regular menu - Not a Treasure Hunt list or its problems/tasks
-            currentMenu.gameObject.SetActive(false);
-            Transform menu = menuStack.Pop();
-            UpdateCurrentMenu(menu);
-            currentMenu.gameObject.SetActive(true);
+            GoBackMenuStack();
         }
     }
 
+    /// <summary>
+    /// Player was asked to go back and have his/her task deleted or stay and finish it.
+    /// </summary>
+    /// <param name="isBackConfirmed">True if the player wants to have the current task deleted and go back. 
+    /// False for not going back and finishing the task.</param>
     public void ConfirmGoingBack(bool isBackConfirmed)
     {
         if (isBackConfirmed)
@@ -213,9 +191,62 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void ContinueWithBackMethod()
+    /// <summary>
+    /// Going back to the last item in <see cref="gameMenuStack"/>. If the game is in creation mode and a task is active
+    /// a check is made to see if it is saved or not before continuing with the 'back' process.
+    /// </summary>
+    private void GoBackGameMenuStack()
     {
-        // Player decided to delete the task and go back
+        // In case password panel is active close it when using Back
+        if (passwordPanel.activeSelf)
+        {
+            ClosePasswordPanel();
+        }
+               
+        if (gameMenuStack.Peek().GameItemType == GameItemType.Task)
+        {
+            // As the last item on the stack is a task, task panel is currently active
+
+            // In CreationMode: A check to see if task, answer or hint input fields are empty
+            if (GameMode == GameMode.CreationMode && !CanTaskBeSaved(false))
+            {
+                // Task is not saved
+                messagePanel.SetActive(true); // TODO put this and the next line in a separate method
+                messageText.text = Constants.TaskNotSavedGoingBack;
+                saveReminderButtons.SetActive(true);
+
+                // Stopping the 'Back' process until the player decides what to do
+                return;
+            }
+
+            // In case the task solved panel was still visible
+            taskSolvedPanel.SetActive(false);
+
+            gameMenu.gameObject.SetActive(true);
+            taskPanel.gameObject.SetActive(false);
+            answerPanel.gameObject.SetActive(false);
+        }
+
+        GameMenuTuple previousGameMenu = gameMenuStack.Pop();
+        UpdateGameMenu(previousGameMenu.Title, previousGameMenu.ListOfItems, previousGameMenu.GameItemType);
+    }
+
+    /// <summary>
+    /// Deactivates the current menu and activates (and pops) the first one in the <see cref="menuStack"/>.
+    /// </summary>
+    private void GoBackMenuStack()
+    {        
+        currentMenu.gameObject.SetActive(false);
+        Transform menu = menuStack.Pop();
+        UpdateCurrentMenu(menu);
+        currentMenu.gameObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// Player decided to delete the current task and go back.
+    /// </summary>
+    private void ContinueWithBackMethod()
+    {        
         treasureHuntManager.RemoveTask(treasureHuntManager.CurrentTask);
 
         gameMenu.gameObject.SetActive(true);
@@ -230,23 +261,30 @@ public class GameManager : MonoBehaviour
 
     #region - Other Menus -
 
+    /// <summary>
+    /// Creates a TreasureHunt.
+    /// </summary>
     public void CreateTreasureHunt()
     {
         if (treasureHuntManager.AllTreasureHunts == null)
         {
             // Treasure hunts not yet loaded
+            SetHeader(Constants.UnnamedTreasureHunt, GameItemType.Problem);
             StartCoroutine(WaitForPersistenceServiceLoaded());
         }
         else
         {
-            // Treasure hunts already loaded (if there were any)
+            // Treasure hunts already loaded (if there were any)            
             treasureHuntManager.CreateTreasureHunt();
         }
     }
 
+    /// <summary>
+    /// Displays all treasure hunts to the player.
+    /// </summary>
     public void ShowAllTreasureHunts()
     {
-        string header = "All Treasure Hunts";
+        string header = Constants.AllTreasureHunts;
         
         if (treasureHuntManager.AllTreasureHunts == null)
         {
@@ -257,16 +295,24 @@ public class GameManager : MonoBehaviour
         }
         else
         {
+            // Treasure hunts loaded, so display them to the player
             UpdateGameMenu(header, treasureHuntManager.AllTreasureHunts);
         }
     }
 
+    /// <summary>
+    /// Updates the game menu with the specified list of items, of the specified type and sets the appropriate events.
+    /// </summary>
+    /// <param name="header">New header for the game menu.</param>
+    /// <param name="listOfItems">List of items to be displayed in the game menu.</param>
+    /// <param name="gameItemType">Type of the items displayed.</param>
     private void UpdateGameMenu(string header, IEnumerable listOfItems, GameItemType gameItemType = GameItemType.TreasureHunt)
     {
         SetHeader(header, gameItemType);
         GameItemPool.Instance.ReclaimGameItems();
 
-        bool isProblemInteractable = true;
+        // In case problems are displayed this is used
+        bool isProblemInteractable = true; 
 
         foreach (var item in listOfItems)
         {
@@ -282,7 +328,7 @@ public class GameManager : MonoBehaviour
             }
 
             Button button = gameItem.GetComponent<Button>();
-            // GameMenuTuple add to the stack
+            // When button is used add the current list of items and their type to the gameMenuStack
             button.onClick.AddListener(() =>
             {
                 GameMenuTuple stackItem = new GameMenuTuple();
@@ -292,84 +338,16 @@ public class GameManager : MonoBehaviour
                 gameMenuStack.Push(stackItem);
             });
 
-            switch (gameItemType) // TODO Create separate methods for all cases
+            switch (gameItemType) 
             {
-                case GameItemType.TreasureHunt:                    
-                    gameItem.TreasureHunt = (TreasureHunt.TreasureHunt)item;
-                    button.onClick.AddListener(() =>
-                    {
-                        if (GameMode == GameMode.CreationMode && !IsPasswordEntered)
-                        {
-                            // Password not entered
-                            passwordPanel.SetActive(true);
-                            if (gameItem.TreasureHunt.Password == null)
-                            {
-                                // Setting up password for the first time
-                                passwordFirstSave.SetActive(true);
-                                passwordAlreadySet.SetActive(false);
-                            }
-                            else
-                            {
-                                // Treasure Hunt already has a password
-                                passwordFirstSave.SetActive(false);
-                                passwordAlreadySet.SetActive(true);
-                            }
-                        }
-
-                        gameMenuStack.Peek().Title = header;
-
-                        UpdateGameMenu(title, gameItem.TreasureHunt.Problems, GameItemType.Problem);
-                        treasureHuntManager.CurrentTreasureHunt = gameItem.TreasureHunt;
-
-                        hintPoints.text = treasureHuntManager.CurrentTreasureHunt.StartingHintPoints.ToString();
-                    });
-
-                    if (GameMode == GameMode.PlayMode)
-                    {
-                        gameItem.checkMark.SetActive(gameItem.TreasureHunt.IsCompleted);
-                    }
+                case GameItemType.TreasureHunt:
+                    SetGameItemTreasureHunt(item, gameItem, button, header, title);                 
                     break;
                 case GameItemType.Problem:
-                    gameItem.Problem = (Problem)item;
-
-                    if (GameMode == GameMode.PlayMode)
-                    {
-                        gameItem.checkMark.SetActive(gameItem.Problem.IsSolved);
-                        gameItem.GetComponent<Button>().interactable = isProblemInteractable;
-                    }
-
-                    isProblemInteractable = gameItem.Problem.IsSolved;
-
-                    if (gameItem.Problem.Tasks.Count == 1)
-                    {
-                        // TODO skip showing Tasks if the game is in Play Mode and just open the one Task
-                        // If the game is in Creation Mode show Task and the Add Task button
-                    }
-                    button.onClick.AddListener(() =>
-                    {
-                        gameMenuStack.Peek().Title = treasureHuntManager.CurrentTreasureHunt.Title;
-
-                        UpdateGameMenu(title, gameItem.Problem.Tasks, GameItemType.Task);
-                        treasureHuntManager.CurrentProblem = gameItem.Problem;
-
-                        hintPoints.text = treasureHuntManager.CurrentProblem.HintPoints.ToString();
-                    });
+                    SetGameItemProblem(item, gameItem, button, title, ref isProblemInteractable);
                     break;
                 case GameItemType.Task:
-                    gameItem.Task = (Task)item;
-                    // TODO Add button listener which shows the Task panel with the appropriate Task
-                    button.onClick.AddListener(() =>
-                    {
-                        gameMenuStack.Peek().Title = treasureHuntManager.CurrentProblem.Title;
-
-                        treasureHuntManager.CurrentTask = gameItem.Task;                  
-                        ActivateTask();
-                    });
-
-                    if (GameMode == GameMode.PlayMode && gameItem.Task.IsSolved)
-                    {
-                        gameItem.checkMark.SetActive(true);
-                    }
+                    SetGameItemTask(item, gameItem, button);
                     break;
                 default:
                     break;
@@ -378,51 +356,179 @@ public class GameManager : MonoBehaviour
 
         if (GameMode == GameMode.CreationMode)
         {
-            // Adding an Add button for TreasureHunt/Problem/Task
-            switch (gameItemType)
-            {
-                case GameItemType.TreasureHunt:
-                    // Showing a list of Treasure Hunts
-                    hintPointsPanel.SetActive(false); // in case the previous game menu was a TreasureHunt
-                    IsPasswordEntered = false;
-
-                    GameItemPool.Instance.GetAddTreasureHunt(gameMenu);
-                    break;
-                case GameItemType.Problem:
-                    hintPointsPanel.SetActive(true);
-                    hintPointsText.text = Constants.TreasureHuntStartingHintPoints;
-
-                    if (treasureHuntManager.CurrentTreasureHunt != null)
-                    {
-                        // Going back from a Problem
-                        hintPoints.text = treasureHuntManager.CurrentTreasureHunt.StartingHintPoints.ToString();
-                    }
-
-                    GameItemPool.Instance.GetAddProblem(gameMenu);
-                    break;
-                case GameItemType.Task:
-                    hintPointsPanel.SetActive(true);
-                    hintPointsText.text = Constants.ProblemRewardHintPoints;
-
-                    if (treasureHuntManager.CurrentProblem != null)
-                    {
-                        // Going back from a Task
-                        hintPoints.text = treasureHuntManager.CurrentProblem.HintPoints.ToString();
-                    }
-
-                    GameItemPool.Instance.GetAddTask(gameMenu);
-                    break;
-                default:
-                    break;
-            }
+            UpdateGameMenuCreationMode(gameItemType);
         }
     }
 
-    private IEnumerator WaitForPersistenceServiceLoaded()
+    /// <summary>
+    /// Sets the specified GameItem's TreasureHunt and checkMark if in PlayMode. 
+    /// Also sets up the event handler for the GameItem's button.
+    /// </summary>
+    /// <param name="item">Boxed GameItem.</param>
+    /// <param name="gameItem">GameItem being set.</param>
+    /// <param name="button">Button of the specified GameItem.</param>
+    private void SetGameItemTreasureHunt(System.Object item, GameItem gameItem, Button button, string currentHeader, string newHeader)
     {
-        SetHeader("Unnamed Treasure Hunt", GameItemType.Problem);
+        gameItem.TreasureHunt = (TreasureHunt.TreasureHunt)item;
+
+        if (GameMode == GameMode.PlayMode)
+        {
+            // If the TreasureHunt is completed adds a check mark next to it
+            gameItem.checkMark.SetActive(gameItem.TreasureHunt.IsCompleted);
+        }
+
+        button.onClick.AddListener(() =>
+        {
+            if (GameMode == GameMode.CreationMode && !IsPasswordEntered)
+            {
+                // Password not entered
+                passwordPanel.SetActive(true);
+                if (gameItem.TreasureHunt.Password == null)
+                {
+                    // Setting up password for the first time
+                    passwordFirstSave.SetActive(true);
+                    passwordAlreadySet.SetActive(false);
+                }
+                else
+                {
+                    // Treasure Hunt already has a password
+                    passwordFirstSave.SetActive(false);
+                    passwordAlreadySet.SetActive(true);
+                }
+            }
+
+            // Setting up the appropriate title for the headerText when Back() is used
+            gameMenuStack.Peek().Title = currentHeader;
+                        
+            UpdateGameMenu(newHeader, gameItem.TreasureHunt.Problems, GameItemType.Problem);
+            treasureHuntManager.CurrentTreasureHunt = gameItem.TreasureHunt;
+
+            hintPoints.text = treasureHuntManager.CurrentTreasureHunt.StartingHintPoints.ToString();
+        });        
+    }
+
+    /// <summary>
+    /// Sets the specified GameItem's Problem and checkMark if in PlayMode.
+    /// Also sets up the event handler for the GameItem's button.
+    /// </summary>
+    /// <param name="item">Boxed GameItem.</param>
+    /// <param name="gameItem">GameItem being set.</param>
+    /// <param name="button">Button of the specified GameItem.</param>
+    /// <param name="isProblemInteractable">False if the previous Problem is not yet solved, true otherwise.</param>
+    private void SetGameItemProblem(System.Object item, GameItem gameItem, Button button, string newHeader, ref bool isProblemInteractable)
+    {
+        gameItem.Problem = (Problem)item;
+
+        if (GameMode == GameMode.PlayMode)
+        {
+            gameItem.checkMark.SetActive(gameItem.Problem.IsSolved);
+            gameItem.GetComponent<Button>().interactable = isProblemInteractable;
+
+            if (gameItem.Problem.Tasks.Count == 1)
+            {
+                // TODO Skip showing tasks and just open the one task
+            }
+        }
+
+        // Sets the variable for the next problem in the list of problems
+        isProblemInteractable = gameItem.Problem.IsSolved;
+
+        button.onClick.AddListener(() =>
+        {
+            // Setting up the appropriate title for the headerText when Back() is used
+            gameMenuStack.Peek().Title = treasureHuntManager.CurrentTreasureHunt.Title;
+
+            UpdateGameMenu(newHeader, gameItem.Problem.Tasks, GameItemType.Task);
+            treasureHuntManager.CurrentProblem = gameItem.Problem;
+
+            hintPoints.text = treasureHuntManager.CurrentProblem.HintPoints.ToString();
+        });
+    }
+
+    /// <summary>
+    /// Sets the specified GameItem's Task and checkMark if in PlayMode.
+    /// Also sets up the event handler for the GameItem's button.
+    /// </summary>
+    /// <param name="item">Boxed GameItem.</param>
+    /// <param name="gameItem">GameItem being set.</param>
+    /// <param name="button">Button of the specified GameItem.</param>
+    private void SetGameItemTask(System.Object item, GameItem gameItem, Button button)
+    {
+        gameItem.Task = (Task)item;
+
+        if (GameMode == GameMode.PlayMode)
+        {            
+            gameItem.checkMark.SetActive(gameItem.Task.IsSolved);
+        }
+
+        button.onClick.AddListener(() =>
+        {
+            // Setting up the appropriate title for the headerText when Back() is used
+            gameMenuStack.Peek().Title = treasureHuntManager.CurrentProblem.Title;
+
+            treasureHuntManager.CurrentTask = gameItem.Task;
+            ActivateTask();
+        });        
+    }
+
+    /// <summary>
+    /// Adds and appropriate Add button depending on the specified game item type. Add TreasureHunt/Problem/Task.
+    /// </summary>
+    /// <param name="gameItemType">The type of the game items currently being displayed.</param>
+    private void UpdateGameMenuCreationMode(GameItemType gameItemType)
+    {
+        // Adding an Add button for TreasureHunt/Problem/Task
+        switch (gameItemType)
+        {
+            case GameItemType.TreasureHunt:
+                // A list of treasure hunts is shown
+                hintPointsPanel.SetActive(false); // in case the previous game menu was a TreasureHunt
+                IsPasswordEntered = false;
+
+                GameItemPool.Instance.GetAddTreasureHunt(gameMenu);
+                break;
+
+            case GameItemType.Problem:
+                // Treasure hunt is displayed with its list of problems
+                hintPointsPanel.SetActive(true);
+                hintPointsText.text = Constants.TreasureHuntStartingHintPoints;
+
+                if (treasureHuntManager.CurrentTreasureHunt != null)
+                {
+                    // Going back from a problem
+                    hintPoints.text = treasureHuntManager.CurrentTreasureHunt.StartingHintPoints.ToString();
+                }
+
+                GameItemPool.Instance.GetAddProblem(gameMenu);
+                break;
+
+            case GameItemType.Task:
+                // Problem is displayed with its list of tasks
+                hintPointsPanel.SetActive(true);
+                hintPointsText.text = Constants.ProblemRewardHintPoints;
+
+                if (treasureHuntManager.CurrentProblem != null)
+                {
+                    // Going back from a task
+                    hintPoints.text = treasureHuntManager.CurrentProblem.HintPoints.ToString();
+                }
+
+                GameItemPool.Instance.GetAddTask(gameMenu);
+                break;
+            default:
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Player tried to create a new treasure hunt before the process of loading all treasure hunts was completed.
+    /// So a message is displayed until loading is finished and then <see cref="CreateTreasureHunt"/> method is called.
+    /// </summary>
+    private IEnumerator WaitForPersistenceServiceLoaded()
+    {        
         workingSpinnerPanel.SetActive(true);
         workingSpinnerText.text = Constants.LoadingMessage;
+
         while (treasureHuntManager.AllTreasureHunts == null)
         {
             yield return null;
@@ -437,27 +543,38 @@ public class GameManager : MonoBehaviour
 
     #region - Menu Transform change => Adding menu to stack and updating current menu - 
 
+    /// <summary>
+    /// The specified menu is deactivated so it's added to the <see cref="menuStack"/>.
+    /// </summary>
+    /// <param name="menu">Transform to be added to the menuStack.</param>
     public void AddMenuToStack(Transform menu)
     {
         menuStack.Push(menu);
 
-        if (menu.name == "Main Menu")
+        if (menu.name == Constants.MainMenuName)
         {
+            // Main menu is deactivated so the back button is necessary
             backPanel.gameObject.SetActive(true);
         }
     }
 
+    /// <summary>
+    /// Sets the specified menu to be the new <see cref="currentMenu"/> and sets the <see cref="headerText"/> text to
+    /// the currentMenu's name. Hides back panel if the current menu is the main menu.
+    /// </summary>
+    /// <param name="menu">Menu to become the current menu.</param>
     public void UpdateCurrentMenu(Transform menu)
     {
         currentMenu = menu;
-        headerText.text = currentMenu.name; // TODO resolve the creation mode case and also in Game menu Menu class is used, not Transform with .name
-        if (currentMenu.name == "Game Menu")
+        headerText.text = currentMenu.name; 
+        if (currentMenu.name == Constants.GameMenuName)
         {
             // TODO Header needs to be set to the appropriate text            
         }
 
-        if (menu.name == "Main Menu")
+        if (currentMenu.name == Constants.MainMenuName)
         {
+            // If main menu is active back button is not necessary
             backPanel.gameObject.SetActive(false);
         }
     }
@@ -467,6 +584,9 @@ public class GameManager : MonoBehaviour
     #region - Task related methods - 
     // TODO answerInputField Placeholder needs to be different depending on the GameMode, or changed to something more appropriate if it's the same for both
 
+    /// <summary>
+    /// Checks the text from the answer input field. 
+    /// </summary>
     public void CheckAnswer()
     {
         string possibleTextSolution = answerInputField.text;
@@ -475,53 +595,61 @@ public class GameManager : MonoBehaviour
                 
         if (treasureHuntManager.CurrentTask.IsSolved == false)
         {
-            // Wrong answer was given, Task is not solved            
+            // Wrong answer was given, task is not solved            
             StartCoroutine(ChangeInputFieldColor(answerInputField,Color.red));            
         }
     }   
 
-    public void CancelPlayModeTask()
-    {
-        answerInputField.text = string.Empty;
-        // TODO reset Location input as well
-    }
-
+    /// <summary>
+    /// Saves the task if it can be saved.
+    /// </summary>
     public void SaveTask()
     {
         bool canTaskBeSaved = CanTaskBeSaved();
-        if (!canTaskBeSaved)
+
+        if (canTaskBeSaved)
+        {            
+            if (treasureHuntManager.CurrentHint != null)
+            {
+                SaveHint();
+            }
+
+            addHint.interactable = true;
+            treasureHuntManager.CurrentTask.TextClue = taskInputField.text;
+            string textSolution = answerInputField.text;
+
+            if (latitude.text != string.Empty && longitude.text != string.Empty)
+            {
+                // Both location and text are valid solutions
+                Location location = new Location(float.Parse(latitude.text), float.Parse(longitude.text), radiusSlider.value);
+                treasureHuntManager.CurrentTask.Solution = new Solution(textSolution, location);
+            }
+            else
+            {
+                // There is only a text solution
+                treasureHuntManager.CurrentTask.Solution.TextSolution = textSolution;
+            }
+
+            treasureHuntManager.SaveTreasureHunt();
+        }
+        else
         {
             // Task cannot be saved at the moment
             return;
         }
-
-        // Task can be saved
-
-        if (treasureHuntManager.CurrentHint != null)
-        {    
-            SaveHint();
-        }
-        
-        treasureHuntManager.CurrentTask.TextClue = taskInputField.text;
-        string textSolution = answerInputField.text;
-
-        if (latitude.text != string.Empty && longitude.text != string.Empty)
-        {
-            // Both location and text are valid solutions
-            Location location = new Location(float.Parse(latitude.text), float.Parse(longitude.text), radiusSlider.value);
-            treasureHuntManager.CurrentTask.Solution = new Solution(textSolution, location);
-        }
-        else
-        {
-            // There is only a text solution
-            treasureHuntManager.CurrentTask.Solution.TextSolution = textSolution;
-        }
-
-        addHint.interactable = true;
-
-        treasureHuntManager.SaveTreasureHunt();
     }
 
+    /// <summary>
+    /// Clears the answer input field in play mode.
+    /// </summary>
+    public void CancelPlayModeTask()
+    {
+        answerInputField.text = string.Empty;
+    }
+
+    /// <summary>
+    /// Resets the ui elements responsible for holding the current task's properties.
+    /// </summary>
     public void CancelCreationModeTask()
     {
         taskInputField.text = treasureHuntManager.CurrentTask.TextClue;
@@ -533,7 +661,14 @@ public class GameManager : MonoBehaviour
         answerInputField.text = treasureHuntManager.CurrentTask.Solution.TextSolution;        
     }
 
-    private IEnumerator DisplayCorrectAnswerPanel(float seconds, bool isLocationReached = false)
+    /// <summary>
+    /// Activates the <see cref="taskSolvedPanel"/> for the specified amount of seconds and shows a 
+    /// message to the player that he/she has solved the Task.
+    /// </summary>
+    /// <param name="seconds">Amount of time that the message will be displayed to the player.</param>
+    /// <param name="isLocationReached">True if the Task is solved by reaching the target location, false otherwise.</param>
+    /// <returns></returns>
+    private IEnumerator ShowTaskSolvedPanel(float seconds, bool isLocationReached = false)
     {
         taskSolvedPanel.SetActive(true);
         if (isLocationReached)
@@ -547,6 +682,12 @@ public class GameManager : MonoBehaviour
             taskSolvedText.text = Constants.TaskSolvedByText;
         }
 
+        if (treasureHuntManager.CurrentProblem.IsSolved)
+        {
+            // All Tasks in the problem are solved, so the player is awarded with some hint points. The message shows how much hint points he/she has won
+            taskSolvedText.text += "\n\r" + Constants.HintPointsRewardedFirstPart + treasureHuntManager.CurrentProblem.HintPoints + Constants.HintPointsRewardedSecondPart;
+        }
+
         while (seconds > 0)
         {
             seconds -= Time.deltaTime;
@@ -556,6 +697,11 @@ public class GameManager : MonoBehaviour
         taskSolvedPanel.SetActive(false);
     }
 
+    /// <summary>
+    /// Changes the color of the given input field to the specified new color. 
+    /// The color flashes from white to the specified color over 1 second and returns to white.
+    /// </summary>
+    /// <param name="inputField">Input field whose color is being changed.</param>
     private IEnumerator ChangeInputFieldColor(InputField inputField, Color newColor)
     {
         float timeInSeconds = 0;
@@ -570,87 +716,98 @@ public class GameManager : MonoBehaviour
         image.color = Color.white;
     }
 
-    private IEnumerator ShowFireworks(float time)
-    {
-        // TODO particle effect set active to true
-        while (time > 0)
-        {
-
-
-            time -= Time.deltaTime;
-            yield return null;
-        }
-        // TODO particle effect set active to false
-    }
-
+    /// <summary>
+    /// Hides game menu and displays the current task in the task panel. Depending on which game mode is active
+    /// activates different ui elements with different values.
+    /// </summary>
     private void ActivateTask()
     {
+        SetHeader(treasureHuntManager.CurrentTask.Title, GameItemType.Task);
+
         // In creation mode this was active so it needs to be set to false
         hintPointsPanel.SetActive(false); 
 
-        SetHeader(treasureHuntManager.CurrentTask.Title, GameItemType.Task);
-
-        // Show Task and Answer panels and hide Game Menu
+        // Show task and answer panels and hide game menu
         gameMenu.gameObject.SetActive(false);
         taskPanel.gameObject.SetActive(true);
         answerPanel.gameObject.SetActive(true);
 
         if (GameMode == GameMode.PlayMode)
         {
-            taskText.text = treasureHuntManager.CurrentTask.TextClue;
-
-            if (treasureHuntManager.CurrentTask.RevealedHints.Count == 0)
-            {
-                // There are no revealed hints for this taks 
-                hintPanel.gameObject.SetActive(false);
-            }
-            else
-            {
-                // There are revealed hints for this Task
-                RefreshHintNavigation();
-
-                hintPanel.gameObject.SetActive(true);
-                treasureHuntManager.CurrentHint = treasureHuntManager.CurrentTask.RevealedHints[0];
-                hintText.text = treasureHuntManager.CurrentHint.Text;
-            }
-
-            if (treasureHuntManager.CurrentTask.IsSolved)
-            {
-                DisplaySolvedTask();
-            }
-            else // Task is not solved yet
-            {
-                answerInputField.text = string.Empty;
-                answerInputField.interactable = true;
-                checkAnswer.interactable = true;
-                cancelAnswer.interactable = true;
-            }
+            ActivateTaskPlayMode();
         }
-        else // GameMode is Creation Mode
+        else 
         {
-            taskInputField.text = treasureHuntManager.CurrentTask.TextClue;
-            addHint.interactable = true;     
-
-            if (treasureHuntManager.CurrentTask.AllHints.Count == 0)
-            {
-                // No hints for this task yet
-                hintPanel.gameObject.SetActive(false);
-            }
-            else
-            {
-                // Task has hints
-                RefreshHintNavigation();
-
-                hintPanel.gameObject.SetActive(true);
-                treasureHuntManager.CurrentHint = treasureHuntManager.CurrentTask.AllHints[0];
-                hintInputField.text = treasureHuntManager.CurrentHint.Text;
-            }
-
-            answerInputField.text = treasureHuntManager.CurrentTask.Solution.TextSolution;
-            answerInputField.interactable = true;
+            ActivateTaskCreationMode();
         }
     }
 
+    /// <summary>
+    /// Sets the appropriate ui elements to display the task in play mode.
+    /// </summary>
+    private void ActivateTaskPlayMode()
+    {
+        taskText.text = treasureHuntManager.CurrentTask.TextClue;
+
+        if (treasureHuntManager.CurrentTask.RevealedHints.Count == 0)
+        {
+            // There are no revealed hints for this task
+            hintPanel.gameObject.SetActive(false);
+        }
+        else
+        {
+            // There are revealed hints for this task
+            RefreshHintNavigation();
+
+            hintPanel.gameObject.SetActive(true);
+            treasureHuntManager.CurrentHint = treasureHuntManager.CurrentTask.RevealedHints[0];
+            hintText.text = treasureHuntManager.CurrentHint.Text;
+        }
+
+        if (treasureHuntManager.CurrentTask.IsSolved)
+        {
+            DisplaySolvedTask();
+        }
+        else // Task is not solved yet
+        {
+            answerInputField.text = string.Empty;
+            answerInputField.interactable = true;
+            checkAnswer.interactable = true;
+            cancelAnswer.interactable = true;
+        }
+    }
+
+    /// <summary>
+    /// Sets the appropriate ui elements to display the task in creation mode.
+    /// </summary>
+    private void ActivateTaskCreationMode()
+    {
+        taskInputField.text = treasureHuntManager.CurrentTask.TextClue;
+        addHint.interactable = true;
+
+        if (treasureHuntManager.CurrentTask.AllHints.Count == 0)
+        {
+            // No hints for this task yet
+            hintPanel.gameObject.SetActive(false);
+        }
+        else
+        {
+            // Task has hints
+            RefreshHintNavigation();
+
+            hintPanel.gameObject.SetActive(true);
+            treasureHuntManager.CurrentHint = treasureHuntManager.CurrentTask.AllHints[0];
+            hintInputField.text = treasureHuntManager.CurrentHint.Text;
+        }
+
+        answerInputField.text = treasureHuntManager.CurrentTask.Solution.TextSolution;
+        answerInputField.interactable = true;
+    }
+
+    /// <summary>
+    /// Displays information about the solved task in the appropriate ui game objects.
+    /// Disables interactivity of some of the buttons and input fields.
+    /// </summary>
     private void DisplaySolvedTask()
     {
         answerInputField.text = treasureHuntManager.CurrentTask.Solution.TextSolution; 
@@ -673,11 +830,17 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// When task is solved calls a SolveTask() method from the treasure hunt manager, gives a visual display
+    /// that the task is solved and displays all the information about the solved task in the appropriate ui game objects.
+    /// </summary>
+    /// <param name="isLocationReached">True if the task is solved by reaching the target location, 
+    /// false if it was solved with a text answer.</param>
     private void OnTaskSolved(bool isLocationReached = false)
     {
-        treasureHuntManager.CurrentTask.IsSolved = true;
+        treasureHuntManager.SolveTask();
         StartCoroutine(ChangeInputFieldColor(answerInputField, Color.green));
-        StartCoroutine(DisplayCorrectAnswerPanel(5, isLocationReached));
+        StartCoroutine(ShowTaskSolvedPanel(7, isLocationReached));
         DisplaySolvedTask();
 
         if (treasureHuntManager.CurrentTreasureHunt.IsCompleted)
@@ -686,27 +849,35 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// A check to see if the task can be saved or if some important input fields are empty.
+    /// </summary>
+    /// <param name="isReminderNeeded">True if the player needs to be reminded that save is not possible, false otherwise.</param>
+    /// <returns>True if the task can be saved, false if it cannot.</returns>
     private bool CanTaskBeSaved(bool isReminderNeeded = true)
     {
-        bool canTaskBeSaved = true;
+        bool canTaskBeSaved = false;
         string saveMessage = string.Empty;
 
         if (taskInputField.text == string.Empty)
         {
+            // Text clue is missing
             saveMessage = Constants.EmptyTaskClueSave;
-            canTaskBeSaved = false;
         }
         else if (answerInputField.text == string.Empty)
         {
+            // Answer is missing
             messagePanel.SetActive(true);
             saveMessage = Constants.EmptyAnswerSave;
-            canTaskBeSaved = false;
         }
         else if (treasureHuntManager.CurrentHint != null && !CanHintBeSaved(false))
         {
-            // Hint InputField is empty
+            // Hint is empty
             saveMessage = Constants.EmptyHintSave;
-            canTaskBeSaved = false;
+        }
+        else
+        {
+            canTaskBeSaved = true;
         }
 
         if (!canTaskBeSaved && isReminderNeeded)
@@ -722,18 +893,22 @@ public class GameManager : MonoBehaviour
 
     #region - Hint related methods -
 
+    /// <summary>
+    /// Shows previous hint.
+    /// </summary>
     public void ShowPreviousHint()
     {
         if (GameMode == GameMode.PlayMode)
         {
             ShowHint(-1);
         }
-        else if (CanHintBeSaved()) // Creation Mode
+        else if (CanHintBeSaved()) // Creation mode
         {
             if (treasureHuntManager.CurrentHint.Text == string.Empty)
             {
-                // Current Hint is empty, but hintInputField.text is not
+                // Current hint is empty, but hintInputField.text is not
                 SaveHint();
+
                 // Since the hint is saved without using the Save button, AddHint button needs to be interactable again
                 addHint.interactable = true;
             }
@@ -741,18 +916,22 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Shows next hint.
+    /// </summary>
     public void ShowNextHint()
     {
         if (GameMode == GameMode.PlayMode)
         {
             ShowHint(1);
         }
-        else if (CanHintBeSaved()) // Creation Mode 
+        else if (CanHintBeSaved()) // Creation mode 
         {
             if (treasureHuntManager.CurrentHint.Text == string.Empty)
             {
-                // Current Hint is empty, but hintInputField.text is not
+                // Current hint is empty, but hintInputField.text is not
                 SaveHint();
+
                 // Since the hint is saved without using the Save button, AddHint button needs to be interactable again
                 addHint.interactable = true;
             }
@@ -760,6 +939,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Checks if the text is empty space and if it is disables the addHint button, otherwise addHint.interactable is set to true.
+    /// </summary>
     public void OnHintValueChanged(string text)
     {
         text = text.Trim();
@@ -774,12 +956,20 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Saves the hintInputField.text to the current hint and saves the treasure hunt.
+    /// </summary>
     private void SaveHint()
     {
         treasureHuntManager.CurrentHint.Text = hintInputField.text;
         treasureHuntManager.SaveTreasureHunt();
     }
 
+    /// <summary>
+    /// A check to see if the hint can be saved or not. Reminds the player that he cannot save an empty
+    /// hint if the reminder is needed.
+    /// </summary>
+    /// <returns>True if the hint can be saved, false otherwise.</returns>
     private bool CanHintBeSaved(bool isReminderNeeded = true)
     {
         bool canHintBeSaved = true;
@@ -798,6 +988,10 @@ public class GameManager : MonoBehaviour
         return canHintBeSaved;
     }
 
+    /// <summary>
+    /// Shows next or previous hint depending on the specified direction.
+    /// </summary>
+    /// <param name="direction">1 for the next hint and -1 for the previous hint.</param>
     private void ShowHint(int direction)
     {
         if (direction != 1 && direction != -1)
@@ -806,67 +1000,95 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        int currentHintIndex;
         if (GameMode == GameMode.PlayMode)
         {
-            // RevealedHints are used in PlayMode
-            currentHintIndex = treasureHuntManager.CurrentTask.RevealedHints.IndexOf(treasureHuntManager.CurrentHint);
-            currentHintIndex = currentHintIndex + direction;
-            if (currentHintIndex < 0)
-            {
-                currentHintIndex = treasureHuntManager.CurrentTask.RevealedHints.Count - 1;
-            }
-            currentHintIndex %= treasureHuntManager.CurrentTask.RevealedHints.Count;
-            treasureHuntManager.CurrentHint = treasureHuntManager.CurrentTask.RevealedHints[currentHintIndex];
-
-            hintText.text = treasureHuntManager.CurrentHint.Text;
+            ShowHintPlayMode(direction);
         }
-        else // Creation Mode
+        else 
         {
-            // AllHints are used in CreationMode
-            currentHintIndex = treasureHuntManager.CurrentTask.AllHints.IndexOf(treasureHuntManager.CurrentHint);
-            currentHintIndex = currentHintIndex + direction;
-            if (currentHintIndex < 0)
-            {
-                currentHintIndex = treasureHuntManager.CurrentTask.AllHints.Count - 1;
-            }
-            currentHintIndex %= treasureHuntManager.CurrentTask.AllHints.Count;
-            treasureHuntManager.CurrentHint = treasureHuntManager.CurrentTask.AllHints[currentHintIndex];
-
-            hintInputField.text = treasureHuntManager.CurrentHint.Text;
+            ShowHintCreationMode(direction);
         }
     }
 
+    /// <summary>
+    /// Shows next or previous hint in play mode, depending on the specified direction.
+    /// </summary>
+    /// <param name="direction">1 for the next hint and -1 for the previous hint.</param>
+    private void ShowHintPlayMode(int direction)
+    {
+        // RevealedHints are used in play mode
+        int currentHintIndex = treasureHuntManager.CurrentTask.RevealedHints.IndexOf(treasureHuntManager.CurrentHint);
+        currentHintIndex = currentHintIndex + direction;
+
+        if (currentHintIndex < 0)
+        {
+            currentHintIndex = treasureHuntManager.CurrentTask.RevealedHints.Count - 1;
+        }
+
+        currentHintIndex %= treasureHuntManager.CurrentTask.RevealedHints.Count;
+        treasureHuntManager.CurrentHint = treasureHuntManager.CurrentTask.RevealedHints[currentHintIndex];
+
+        hintText.text = treasureHuntManager.CurrentHint.Text;
+    }
+
+    /// <summary>
+    /// Shows next or previous hint in creation mode, depending on the specified direction.
+    /// </summary>
+    /// <param name="direction">1 for the next hint and -1 for the previous hint.</param>
+    private void ShowHintCreationMode(int direction)
+    {
+        // AllHints are used in creation mode
+        int currentHintIndex = treasureHuntManager.CurrentTask.AllHints.IndexOf(treasureHuntManager.CurrentHint);
+        currentHintIndex = currentHintIndex + direction;
+
+        if (currentHintIndex < 0)
+        {
+            currentHintIndex = treasureHuntManager.CurrentTask.AllHints.Count - 1;
+        }
+
+        currentHintIndex %= treasureHuntManager.CurrentTask.AllHints.Count;
+        treasureHuntManager.CurrentHint = treasureHuntManager.CurrentTask.AllHints[currentHintIndex];
+
+        hintInputField.text = treasureHuntManager.CurrentHint.Text;
+    }
+
+    /// <summary>
+    /// Enables or disables <see cref="previousHint"/> and <see cref="nextHint"/>  buttons depending on 
+    /// the play mode and the count of revealed hints or the count of all hints.
+    /// </summary>
     private void RefreshHintNavigation()
     {
         if (GameMode == GameMode.PlayMode)
         {
-            // RevealedHints are used in PlayMode
+            // RevealedHints are used in play mode
             if (treasureHuntManager.CurrentTask.RevealedHints.Count > 1)
             {
                 SetHintNavigationOptions(true);
             }
             else
             {
-                // There are no Revealed Hints or there is only 1 Hint
+                // There are no revealed hints or there is only 1 hint
                 SetHintNavigationOptions(false);
             }
         }
-        else // Creation Mode
+        else // Creation mode
         {
-            // AllHints are used in CreationMode
+            // AllHints are used in creation mode
             if (treasureHuntManager.CurrentTask.AllHints.Count > 1)
             {
                 SetHintNavigationOptions(true);
             }
             else
             {
-                // There are no Hints at all or there is only 1 Hint
+                // There are no hints at all or there is only 1 Hint
                 SetHintNavigationOptions(false);
             }
         }
     }
 
+    /// <summary>
+    /// Sets interactability of <see cref="previousHint"/> and <see cref="nextHint"/> buttons to the specified bool value.
+    /// </summary>
     private void SetHintNavigationOptions(bool isInteractable)
     {
         previousHint.interactable = isInteractable;
@@ -877,6 +1099,9 @@ public class GameManager : MonoBehaviour
 
     #region - Hints points related methods -
 
+    /// <summary>
+    /// Changes starting hint points of a treasure hunt or reward hint points of a problem by the specified amount.
+    /// </summary>
     public void ChangeHintPoints(int changeBy)
     {
         int points;
@@ -892,7 +1117,7 @@ public class GameManager : MonoBehaviour
             {
                 treasureHuntManager.ChangeTreasureHuntHintPoints(points);
             }
-            else if(gameItemType == GameItemType.Problem)
+            else if (gameItemType == GameItemType.Problem)
             {
                 treasureHuntManager.ChangeProblemHintPoints(points);
             }
@@ -947,18 +1172,20 @@ public class GameManager : MonoBehaviour
         }        
     }
 
+    /// <summary>
+    /// Sets header to the specified parameter and enables or disables header eiditing
+    /// based on the game mode and the specified game item type.
+    /// </summary>
+    /// <param name="header">New header.</param>
+    /// <param name="gameItemType">Type of the game item whose header is being changed.</param>
     private void SetHeader(string header, GameItemType gameItemType = GameItemType.TreasureHunt)
     {
-        if (GameMode == GameMode.PlayMode)
+        if (GameMode == GameMode.PlayMode || gameItemType == GameItemType.TreasureHunt)
         {
-            ActivateHeaderObjects(true);
-        }
-        else if (gameItemType == GameItemType.TreasureHunt)
-        {
-            // Game is in CreationMode but currently a list of all TreasureHunts 
+            // Game is either in PlayMode or in CreationMode but currently a list of all TreasureHunts 
             // is displayed so header cannot be edited
             ActivateHeaderObjects(true);
-        }
+        }         
         else 
         {
             // Header can be edited -> Titles can be changed
@@ -984,6 +1211,9 @@ public class GameManager : MonoBehaviour
 
     #region - Advanced options related methods - 
 
+    /// <summary>
+    /// Shows advanced options to the player for both creation and play modes.
+    /// </summary>
     public void ShowAdvancedOptions()
     {
         if (GameMode == GameMode.CreationMode && treasureHuntManager.CurrentTask.Solution.HasLocationSolution)
@@ -994,42 +1224,49 @@ public class GameManager : MonoBehaviour
         {
             if (treasureHuntManager.CurrentTask.IsSolved)
             {
-                ShowSolvedLocationOptions();                
+                ShowSolvedLocationOptions();
+                SetCoordinatesInteractable(false);
             }
             else
             {
                 // Task is not solved so reset location options
+                ResetPlayModeAdvancedOptions();
                 IgnoreLocation();
             }
         }
     }
 
+    /// <summary>
+    /// Closes advanced options. Stops location service if it was still active.
+    /// </summary>
     public void CloseAdvancedOptions()
     {
         // In case it was used on the first openning of the advanced options
         useCurrentLocation.isOn = false;
 
-        ResetPlayModeAdvancedOptions();
         locationManager.StopLocationService();
     }
 
+    /// <summary>
+    /// Sets the interactable property on some buttons and input fields in advanced options panel
+    /// based on whether the current task is solved or not.
+    /// </summary>
     private void ResetPlayModeAdvancedOptions()
     {
-        if (treasureHuntManager.CurrentTask.IsSolved)
-        {
-            // Task is solved, buttons cannot be used
-            checkCoordinates.interactable = false;
-            checkPosition.interactable = false;            
-        }
-        else
-        {
-            // Task is not solved, buttons can be used
-            checkCoordinates.interactable = true;
-            checkPosition.interactable = true;
-        }
+        bool isSolved = treasureHuntManager.CurrentTask.IsSolved;
+
+        // If the Task is solved buttons and input fields are not interactable
+        // If the Task is not solved they are interactable
+        SetCoordinatesInteractable(!isSolved);
+        checkCoordinates.interactable = !isSolved;
+        checkPosition.interactable = !isSolved;
+        
         stopPositionCheck.interactable = false;
     }
 
+    /// <summary>
+    /// Shows latitude, longitude and the target location radius for the solved task.
+    /// </summary>
     private void ShowSolvedLocationOptions()
     {
         latitude.text = treasureHuntManager.CurrentTask.Solution.LocationSolution.Latitude.ToString();
@@ -1041,11 +1278,18 @@ public class GameManager : MonoBehaviour
 
     #region - Location related methods - 
 
+    /// <summary>
+    /// Calls or stops UseCurrentLocation method of the location manager based on the specified parameter.
+    /// </summary>
+    /// <param name="shouldUseCurrentLocation">True if current location should be used, false for stopping that process.</param>
     public void UseCurrentLocation(bool shouldUseCurrentLocation)
     {
         locationManager.UseCurrentLocation(shouldUseCurrentLocation);
     }
 
+    /// <summary>
+    /// Resets radius slider and clears latitude and longitude input fields.
+    /// </summary>
     public void IgnoreLocation()
     {
         latitude.text = string.Empty;
@@ -1053,6 +1297,10 @@ public class GameManager : MonoBehaviour
         radiusSlider.value = Constants.DefaultLocationRadius;
     }
 
+    /// <summary>
+    /// If the current task has a location solution checks the inputted coordinates to see if they are withit the target radius.
+    /// Displays an appropriate message if the task has no location solution.
+    /// </summary>
     public void CheckCoordinates()
     {
         if (!treasureHuntManager.CurrentTask.Solution.HasLocationSolution)
@@ -1080,6 +1328,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// In play mode checks the current position of the player if the current task has a location solution.
+    /// Displays an appropriate message if the task has no location solution.
+    /// </summary>
     public void CheckPosition()
     {
         if (!treasureHuntManager.CurrentTask.Solution.HasLocationSolution)
@@ -1094,11 +1346,26 @@ public class GameManager : MonoBehaviour
         else
         {
             // Task has Location as a Solution
+            SetCoordinatesInteractable(false);  
+            // In case the location service doesn't start SetCoordinatesInteractable(true) is called 
+            // from an appropriate event handler, so locationManager.CheckPosition needs to be called after SetCoordinatesInteractable(false)
             locationManager.CheckPosition(treasureHuntManager.CurrentTask.Solution.LocationSolution);
         }
 
     }
 
+    /// <summary>
+    /// Sets interactable property of latitude and longitude input fields to the specified parameter.
+    /// </summary>
+    public void SetCoordinatesInteractable(bool isInteractable)
+    {
+        latitude.interactable = isInteractable;
+        longitude.interactable = isInteractable;
+    }
+
+    /// <summary>
+    /// Displays an appropriate message that the task has no location solution.
+    /// </summary>
     private void ReportNoLocationSolution()
     {
         messagePanel.SetActive(true);
@@ -1109,6 +1376,9 @@ public class GameManager : MonoBehaviour
 
     #region - Password related methods -
     
+    /// <summary>
+    /// Saves treasure hunt's password if it is valid.
+    /// </summary>
     public void SavePassword()
     {
         if (firstPassword.text.Trim() == string.Empty)
@@ -1123,6 +1393,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Checks if the entered password is the correct password for the chosen treasure hunt.
+    /// </summary>
     public void EnterPassword()
     {
         if (enterPassword.text != treasureHuntManager.CurrentTreasureHunt.Password)
@@ -1138,6 +1411,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Changes treasure hunt's password.
+    /// </summary>
     public void ChangePassword()
     {
         if (currentPassword.text != treasureHuntManager.CurrentTreasureHunt.Password)
@@ -1158,6 +1434,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Saves the treasure hunt with the specified password and closes the password panel.
+    /// </summary>
+    /// <param name="password">New password for the current treasure hunt.</param>
     private void SavePassword(string password)
     {
         IsPasswordEntered = true;
@@ -1167,6 +1447,9 @@ public class GameManager : MonoBehaviour
         ClosePasswordPanel();
     }
 
+    /// <summary>
+    /// Deactivates the password panel and clears all password input fields.
+    /// </summary>
     private void ClosePasswordPanel()
     {
         passwordPanel.SetActive(false);
@@ -1179,6 +1462,11 @@ public class GameManager : MonoBehaviour
 
     #endregion
 
+    /// <summary>
+    /// Removes the game item and returns it to the game item pool after 
+    /// the player deleted a task, problem or a treasure hunt.
+    /// </summary>
+    /// <param name="gameItem">Game item which held a task, problem or a treasure hunt that has been deleted.</param>
     public void RemoveGameItem(GameItem gameItem)
     {
         GameItemPool.Instance.ReclaimGameItem(gameItem);
@@ -1197,27 +1485,35 @@ public class GameManager : MonoBehaviour
             default:
                 break;
         }
-    }
-   
+    }   
 
     #endregion
 
     private void Start()
     {
-        GameMode = GameMode.PlayMode;
-        GameModeChanged += OnGameModeChanged;
-
         treasureHuntManager = GetComponent<TreasureHuntManager>();
         locationManager = GetComponent<LocationManager>();
 
         currentMenu = mainMenu;
 
+        GameMode = GameMode.PlayMode;
+        GameModeChanged += OnGameModeChanged;
+        
         menuStack = new Stack<Transform>();
         gameMenuStack = new Stack<GameMenuTuple>();
 
+        AddTreasureHuntManagerHandlers();
+        AddLocationManagerHandlers();        
+    }
+
+    /// <summary>
+    /// Adds event handlers for treasure hunt manager's events.
+    /// </summary>
+    private void AddTreasureHuntManagerHandlers()
+    {
         treasureHuntManager.TreasureHuntsLoaded += TreasureHuntsLoaded;
         treasureHuntManager.TreasureHuntSaveStarted += TreasureHuntSaveStarted;
-        treasureHuntManager.TreasureHuntSaved += TreasureHuntSaved;        
+        treasureHuntManager.TreasureHuntSaved += TreasureHuntSaved;
 
         treasureHuntManager.TreasureHuntCreated += OnTreasureHuntCreated;
         treasureHuntManager.ProblemCreated += OnProblemCreated;
@@ -1228,23 +1524,34 @@ public class GameManager : MonoBehaviour
         treasureHuntManager.HintRevealed += OnHintRevealed;
 
         treasureHuntManager.TaskSolved += () => OnTaskSolved();
+    }
 
-        // Location Manager event subscription
-        locationManager.StartingLocationService += LocationManager_StartingLocationService;
-        locationManager.LocationDisabledByUser += LocationManager_LocationDisabledByUser;
-        locationManager.LocationServiceNotStarted += LocationManager_LocationServiceNotStarted;
-        locationManager.LocationServiceStarted += LocationManager_LocationServiceStarted;
+    /// <summary>
+    /// Adds event handlers for location manager's events.
+    /// </summary>
+    private void AddLocationManagerHandlers()
+    {
+        locationManager.StartingLocationService += StartingLocationService;
+        locationManager.LocationDisabledByUser += LocationDisabledByUser;
+        locationManager.LocationServiceNotStarted += LocationServiceNotStarted;
+        locationManager.LocationServiceStarted += LocationServiceStarted;
 
-        locationManager.TargetLocationReached += LocationManager_TargetLocationReached;
+        locationManager.TargetLocationReached += TargetLocationReached;
     }
 
     #region - Switch Game Modes - 
 
+    /// <summary>
+    /// Sets game mode to play mode.
+    /// </summary>
     public void GoToPlayMode()
     {
         GameMode = GameMode.PlayMode;
     }
 
+    /// <summary>
+    /// Sets game mode to creation mode.
+    /// </summary>
     public void GoToCreationMode()
     {
         GameMode = GameMode.CreationMode;
@@ -1254,12 +1561,18 @@ public class GameManager : MonoBehaviour
 
     #region - TreasureHuntManager events -
 
+    /// <summary>
+    /// Displays a working spinner pannel with a message to the player that the treasure hunt is being saved.
+    /// </summary>
     private void TreasureHuntSaveStarted()
     {
         workingSpinnerPanel.SetActive(true);
         workingSpinnerText.text = Constants.SavingMessage;
     }
 
+    /// <summary>
+    /// If working spinner panel was active hides it because all treasure hunts have been loaded.
+    /// </summary>
     private void TreasureHuntsLoaded()
     {
         treasureHuntManager.TreasureHuntsLoaded -= TreasureHuntsLoaded;
@@ -1268,15 +1581,22 @@ public class GameManager : MonoBehaviour
         {
             // Player already waiting for all treasure hunts
             workingSpinnerPanel.SetActive(false);
-            UpdateGameMenu("All Treasure Hunts", treasureHuntManager.AllTreasureHunts);
+            UpdateGameMenu(Constants.AllTreasureHunts, treasureHuntManager.AllTreasureHunts);
         }
     }
 
+    /// <summary>
+    /// Disables the working spinner panel because the treasure hunt has been saved and the player can
+    /// continue playing the game now.
+    /// </summary>
     private void TreasureHuntSaved()
     {
         workingSpinnerPanel.SetActive(false);
     }
 
+    /// <summary>
+    /// Activates and deactivates some ui game objects based on the current play mode.
+    /// </summary>
     private void OnGameModeChanged()
     {
         bool isInPlayMode = GameMode == GameMode.PlayMode;
@@ -1304,6 +1624,9 @@ public class GameManager : MonoBehaviour
         advancedCreationOptions.SetActive(!isInPlayMode);
     }
 
+    /// <summary>
+    /// Shows hint panel with the revealed hint and calls <see cref="RefreshHintNavigation"/> .
+    /// </summary>
     private void OnHintRevealed()
     {
         hintPanel.gameObject.SetActive(true);
@@ -1314,11 +1637,15 @@ public class GameManager : MonoBehaviour
 
     #region - OnCreated Handlers -
 
+    /// <summary>
+    /// After a treasure hunt has been created adds an "All Treasure Hunts" tuple to the game menu stack, shows the password panel
+    /// and updates the game menu to display the newly created treasure hunt.
+    /// </summary>
     private void OnTreasureHuntCreated()
     {
-        // Adding "All Treasure Hunts" to the game menu stack so that going back from the new Treasure Hunt gets the player to this list
+        // Adding "All Treasure Hunts" to the game menu stack so that going back from the new treasure hunt gets the player to this list
         GameMenuTuple stackItem = new GameMenuTuple();
-        stackItem.Title = "All Treasure Hunts";
+        stackItem.Title = Constants.AllTreasureHunts;
         stackItem.ListOfItems = treasureHuntManager.AllTreasureHunts;
         stackItem.GameItemType = GameItemType.TreasureHunt;
         gameMenuStack.Push(stackItem);
@@ -1332,9 +1659,13 @@ public class GameManager : MonoBehaviour
         UpdateGameMenu(treasureHuntManager.CurrentTreasureHunt.Title, treasureHuntManager.CurrentTreasureHunt.Problems, GameItemType.Problem);
     }
 
+    /// <summary>
+    /// After a problem has been created adds the current treasure hunt to the game menu stack and updates the game menu
+    /// to display the newly created problem.
+    /// </summary>
     private void OnProblemCreated()
     {
-        // Game is already in Creation Mode
+        // Adding the current treasure hunt with its list of problems to the game menu stack
         GameMenuTuple stackItem = new GameMenuTuple();
         stackItem.Title = treasureHuntManager.CurrentTreasureHunt.Title;
         stackItem.ListOfItems = treasureHuntManager.CurrentTreasureHunt.Problems;
@@ -1344,9 +1675,13 @@ public class GameManager : MonoBehaviour
         UpdateGameMenu(treasureHuntManager.CurrentProblem.Title, treasureHuntManager.CurrentProblem.Tasks, GameItemType.Task);        
     }
 
+    /// <summary>
+    /// After a task has been created adds the current problem to the game menu stack and shows the task panel
+    /// for the newly created task.
+    /// </summary>
     private void OnTaskCreated()
     {
-        // Game is in Creation Mode
+        // Adding the current problem with its list of tasks to the game menu stack
         GameMenuTuple stackItem = new GameMenuTuple();
         stackItem.Title = treasureHuntManager.CurrentProblem.Title;
         stackItem.ListOfItems = treasureHuntManager.CurrentProblem.Tasks;
@@ -1356,6 +1691,9 @@ public class GameManager : MonoBehaviour
         ActivateTask();
     }
 
+    /// <summary>
+    /// After a hint has been created sets certain properties of some ui game object responsible for hints.
+    /// </summary>
     private void OnHintCreated()
     {
         // No new hints can be added as long as the current one is empty
@@ -1371,6 +1709,9 @@ public class GameManager : MonoBehaviour
 
     #region - OnRemoved Handlers -
 
+    /// <summary>
+    /// After a hint has been removed sets certain properties of some ui game object responsible for hints.
+    /// </summary>
     private void OnHintRemoved()
     {
         // In case the CurrentHint.Text was just an empty string
@@ -1396,37 +1737,47 @@ public class GameManager : MonoBehaviour
     #endregion
 
     #region - LocationManager events -
-
-    private void LocationManager_TargetLocationReached()
+    
+    private void TargetLocationReached()
     {
-        // Target location radius reached, Task is solved                
+        // Target location radius reached, task is solved                
         OnTaskSolved(true);
     }
 
-    private void LocationManager_LocationServiceStarted()
+    private void LocationServiceStarted()
     {
         workingSpinnerPanel.SetActive(false);
     }
 
-    private void LocationManager_LocationServiceNotStarted()
+    private void LocationServiceNotStarted()
     {
         useCurrentLocation.isOn = false; // In case the toggle was used for starting the service
         workingSpinnerPanel.SetActive(false);
 
         messagePanel.SetActive(true);
         messageText.text = Constants.LocationServiceNotStarted;
+
+        if (GameMode == GameMode.PlayMode)
+        {
+            ResetPlayModeAdvancedOptions();
+        }
     }
 
-    private void LocationManager_LocationDisabledByUser()
+    private void LocationDisabledByUser()
     {
         useCurrentLocation.isOn = false; // In case the toggle was used for starting the service
         workingSpinnerPanel.SetActive(false);
 
         messagePanel.SetActive(true);
         messageText.text = Constants.LocationServiceDisabledByUser;
+
+        if (GameMode == GameMode.PlayMode)
+        {
+            ResetPlayModeAdvancedOptions();
+        }
     }
 
-    private void LocationManager_StartingLocationService()
+    private void StartingLocationService()
     {
         workingSpinnerPanel.SetActive(true);
         workingSpinnerText.text = Constants.StartingLocationService;
@@ -1434,11 +1785,3 @@ public class GameManager : MonoBehaviour
 
     #endregion  
 }
-
-public class GameMenuTuple
-{
-    public string Title { get; set; }
-    public IEnumerable ListOfItems { get; set; }
-    public GameItemType GameItemType { get; set; }
-}
-

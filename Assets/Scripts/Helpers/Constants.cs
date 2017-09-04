@@ -8,11 +8,19 @@ public static class Constants
 {
     public static readonly string persistentDataPath = Application.persistentDataPath;
 
+    public const string AllTreasureHunts = "All Treasure Hunts";
+    public const string UnnamedTreasureHunt = "Unnamed Treasure Hunt";
+    public const string GameMenuName = "Game Menu";
+    public const string MainMenuName = "Main Menu";
+    public const string GameManagerTag = "Game Manager";
+
     public const string Extension = ".th";
     public const string TreasureHuntStartingHintPoints = "Starting hint points:";
     public const string ProblemRewardHintPoints = "Reward hint points:";
     public const string RemainingHintPointsMessageSingular = " hint point remaining";
     public const string RemainingHintPointsMessagePlural = " hint points remaining";
+    public const string HintPointsRewardedFirstPart = "You got ";
+    public const string HintPointsRewardedSecondPart = " hint point(s) as a reward";
 
     public const string TaskNotSavedGoingBack = "Your task is not yet saved. If you go back it will be deleted. Are you sure you want to go back?";
     public const string SameNameTreasureHunt = "A treasure hunt with the same name already exists.";

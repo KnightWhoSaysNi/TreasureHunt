@@ -27,6 +27,10 @@ public class LocationManager : MonoBehaviour
         Input.location.Stop();       
     }
 
+    /// <summary>
+    /// Starts or stops using and displaying the current location in latitude and logitude input fields
+    /// based on the specified parameter.
+    /// </summary>
     public void UseCurrentLocation(bool shouldUseCurrentLocation)
     {
         this.shouldUseCurrentLocation = shouldUseCurrentLocation;
@@ -40,6 +44,10 @@ public class LocationManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Takes the values from latitude and longitude input fields and checks
+    /// if the given coordinates are within the specified target location's radius.
+    /// </summary>
     public bool AreCoordinatesInTargetRadius(Location targetLocation)
     {
         this.targetLocation = targetLocation;
@@ -53,6 +61,9 @@ public class LocationManager : MonoBehaviour
         return IsTargetReached(distanceToTarget);
     }   
 
+    /// <summary>
+    /// Sets target location to the specified target location and starts the CheckPosition coroutine.
+    /// </summary>
     public void CheckPosition(Location targetLocation)
     {
         this.targetLocation = targetLocation;
@@ -66,6 +77,11 @@ public class LocationManager : MonoBehaviour
         updateTime = Constants.LocationServiceUpdateTimeInSeconds;
     }
 
+    /// <summary>
+    /// Checks the current player position compared to the target location for a certain amount of time.
+    /// Displays the coordinates in latitude and logitude input fields for the player to see.
+    /// If the target location is reached the appropriate event is raised signaling the player.
+    /// </summary>
     private IEnumerator CheckPosition()
     {
         // If it's not running already start the service now
@@ -73,13 +89,14 @@ public class LocationManager : MonoBehaviour
         {            
             yield return StartCoroutine(StartLocationService()); // If this didn't start the location service an appropriate event was raised
         }
-        MonoBehaviour.print("Check position status: " + Input.location.status);
 
         float distanceToTarget;
 
         // If location service is not stopped manually it will run for 5minutes
         while (Input.location.status == LocationServiceStatus.Running && runTime > 0)
         {
+            DisplayCoordinates();
+
             distanceToTarget = GetDistance(Input.location.lastData.latitude, Input.location.lastData.longitude,
                 targetLocation.Latitude, targetLocation.Longitude);
             
@@ -91,6 +108,10 @@ public class LocationManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Sets the current latitude and longitude in the appropriate input fields
+    /// while the location service is running and until the player stops this process.
+    /// </summary>
     private IEnumerator SetCurrentLocation()
     {
         // If it's not running already start the service now
@@ -99,18 +120,27 @@ public class LocationManager : MonoBehaviour
             // If the service doesn't start, latitude&longitude input fields won't get any values 
             yield return StartCoroutine(StartLocationService());            
         }
-        MonoBehaviour.print("Use current location status: " + Input.location.status);
 
         while (shouldUseCurrentLocation && Input.location.status == LocationServiceStatus.Running)
         {
-            MonoBehaviour.print("Using current location");
-            latitudeInput.text = Input.location.lastData.latitude.ToString();
-            longitudeInput.text = Input.location.lastData.longitude.ToString();
+            DisplayCoordinates();
 
             yield return new WaitForSeconds(updateTime);
         }
     }
 
+    /// <summary>
+    /// Displays current coordinates in the latitude and logitude input fields.
+    /// </summary>
+    private void DisplayCoordinates()
+    {
+        latitudeInput.text = Input.location.lastData.latitude.ToString();
+        longitudeInput.text = Input.location.lastData.longitude.ToString();
+    }
+
+    /// <summary>
+    /// Starts location service and raises the appropriate events.
+    /// </summary>
     private IEnumerator StartLocationService()
     {
         // Check if user has location service enabled
@@ -161,6 +191,10 @@ public class LocationManager : MonoBehaviour
         }
     }        
 
+    /// <summary>
+    /// Finds the distance in meters from location A to location B based on the given latitudes and longitudes.
+    /// </summary>
+    /// <returns>Distance in meters from A to B.</returns>
     private float GetDistance(float latitudeA, float longitudeA, float latitudeB, float longitudeB)
     {
         var latitudeAInRadians = latitudeA * Mathf.Deg2Rad;
@@ -184,6 +218,9 @@ public class LocationManager : MonoBehaviour
         return distance;
     }
 
+    /// <summary>
+    /// Based on the specified distance to the target checks if the player is in that target's radius or not.
+    /// </summary>
     private bool IsTargetReached(float distanceToTarget)
     {
         if (distanceToTarget < targetLocation.Radius / 2)

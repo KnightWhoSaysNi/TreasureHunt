@@ -18,12 +18,13 @@ namespace TreasureHunt
             Solution = new Solution();
             TextClue = string.Empty; 
         }
+
         public string TextClue { get; set; }
         public Solution Solution { get; set; }
-        public bool IsSolved { get; set; }
         public List<Hint> AllHints { get; set; }
         public List<Hint> UnrevealedHints { get; private set; }
         public List<Hint> RevealedHints { get; private set; }
+        public bool IsSolved { get; set; }
         public bool HasHints // TODO Check if this is necessary
         {
             get

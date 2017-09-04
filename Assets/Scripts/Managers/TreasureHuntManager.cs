@@ -48,9 +48,13 @@ public class TreasureHuntManager : MonoBehaviour
 
     #region - Create Treasure Hunt/Problem/Task/Hint -
 
+    /// <summary>
+    /// Creates a new, unnamed treasure hunt, and saves it.
+    /// </summary>
     public void CreateTreasureHunt()
     {
-        TreasureHunt.TreasureHunt newTreasureHunt = new TreasureHunt.TreasureHunt("Unnamed Treasure Hunt " + (AllTreasureHunts.Count + 1)); // TODO 
+        // TODO make better naming system for treasure hunts, problems and tasks
+        TreasureHunt.TreasureHunt newTreasureHunt = new TreasureHunt.TreasureHunt("Unnamed Treasure Hunt " + (AllTreasureHunts.Count + 1)); 
         AllTreasureHunts.Add(newTreasureHunt);
         CurrentTreasureHunt = newTreasureHunt;        
 
@@ -62,6 +66,9 @@ public class TreasureHuntManager : MonoBehaviour
         SaveTreasureHunt();
     }
 
+    /// <summary>
+    /// Creates a new problem and saves the treasure hunt.
+    /// </summary>
     public void CreateProblem()
     {
         Problem newProblem = new Problem("Problem " + (CurrentTreasureHunt.Problems.Count + 1)); // TODO 
@@ -76,9 +83,12 @@ public class TreasureHuntManager : MonoBehaviour
         SaveTreasureHunt();
     }
 
+    /// <summary>
+    /// Creates a new task and saves the treasure hunt.
+    /// </summary>
     public void CreateTask()
     {
-        Task newTask = new Task("Task " + (CurrentProblem.Tasks.Count + 1)); // TODO Task can be removed and a duplicate name can occur
+        Task newTask = new Task("Task " + (CurrentProblem.Tasks.Count + 1)); // TODO 
         CurrentProblem.Tasks.Add(newTask);
         CurrentTask = newTask;
 
@@ -90,6 +100,9 @@ public class TreasureHuntManager : MonoBehaviour
         SaveTreasureHunt();
     }
 
+    /// <summary>
+    /// Creates a new hint and saves it.
+    /// </summary>
     public void CreateHint()
     {
         Hint newHint = new Hint();
@@ -127,6 +140,8 @@ public class TreasureHuntManager : MonoBehaviour
         SaveTreasureHunt();
     }
 
+    /// <summary>
+    /// Removes the current hint and raises the HintRemoved event.
     public void RemoveHint()
     {
         SilentlyRemoveHint(CurrentHint);        
@@ -135,10 +150,13 @@ public class TreasureHuntManager : MonoBehaviour
         {
             HintRemoved();
         }
-
-        SaveTreasureHunt();
     }
 
+    /// <summary>
+    /// Removes the specified hint from the current task without raising any events. 
+    /// Saves treasure hunt after removing the hint.
+    /// </summary>
+    /// <param name="hint"></param>
     public void SilentlyRemoveHint(Hint hint)
     {
         CurrentTask.AllHints.Remove(hint);
@@ -174,6 +192,10 @@ public class TreasureHuntManager : MonoBehaviour
 
     #endregion
 
+    /// <summary>
+    /// Saves the current treasure hunt. If
+    /// </summary>
+    /// <param name="oldTitle"></param>
     public void SaveTreasureHunt(string oldTitle = null)
     {
         if (TreasureHuntSaveStarted != null)
@@ -184,6 +206,9 @@ public class TreasureHuntManager : MonoBehaviour
         PersistenceService.Instance.SaveTreasureHunt(CurrentTreasureHunt, oldTitle);
     }
 
+    /// <summary>
+    /// Checks if all treasure hunts contain a treasure hunt with the specified title.
+    /// </summary>
     public bool ContainsTreasureHuntTitle(string title)
     {
         foreach (var treasureHunt in AllTreasureHunts)
@@ -196,6 +221,9 @@ public class TreasureHuntManager : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// Compares the given string to the text solution of the current task. Ignores white spaces and case.
+    /// </summary>
     public void CheckTextSolution(string possibleSolution)
     {
         if (CurrentTask.Solution.TextSolution.Trim().ToLower() == possibleSolution.Trim().ToLower())
@@ -208,6 +236,13 @@ public class TreasureHuntManager : MonoBehaviour
                 TaskSolved();
             }
         }
+    }
+
+    public void SolveTask()
+    {
+        CurrentTask.IsSolved = true;
+
+        SaveTreasureHunt();
     }
 
     // This MUST be called before HintOptions.RevealHint in order to work correctly
@@ -258,11 +293,11 @@ public class TreasureHuntManager : MonoBehaviour
     private void Start()
     {
         PersistenceService.Instance.LoadTreasureHunts();       
-        PersistenceService.Instance.Loaded += Instance_Loaded;
+        PersistenceService.Instance.Loaded += OnLoaded;
         PersistenceService.Instance.Saved += OnSaved;
     }
 
-    private void Instance_Loaded(List<TreasureHunt.TreasureHunt> obj)
+    private void OnLoaded(List<TreasureHunt.TreasureHunt> obj)
     {
         AllTreasureHunts = obj;
         areTreasureHuntsLoaded = true;
@@ -276,4 +311,3 @@ public class TreasureHuntManager : MonoBehaviour
     #endregion
 }
 
-public enum GameMode { PlayMode, CreationMode };

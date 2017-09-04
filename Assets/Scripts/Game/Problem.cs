@@ -15,6 +15,7 @@ namespace TreasureHunt
         }
 
         public List<Task> Tasks { get; set; }
+        public int HintPoints { get; set; }
         public bool IsSolved
         {
             get
@@ -30,6 +31,5 @@ namespace TreasureHunt
                 return true;
             }
         }
-        public int HintPoints { get; set; }
     }
 }
