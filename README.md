@@ -6,4 +6,4 @@ Treasure hunt is divided into problems and problems consist of one or more tasks
 There is no reward at the end for solving all problems. The game is meant to played by two or more people, as its main purpose is to go outside and socialize.
 
 </br></br>
-This was my first attempt at making a Unity game. Despite the premise the game doesn't deliver in the visual aspect, nor in the gameplay itself. But it was an important stepping stone in learning Unity and I had fun creating it.
+This was my first attempt at making a Unity game. Although it is not something that can be published it was an important stepping stone in learning Unity game development and I had fun creating it.
